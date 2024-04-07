@@ -8,9 +8,13 @@ mod NFTMint {
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use terracon_prestige_card::nft_mint::{INFTMint};
     use terracon_prestige_card::errors::{
-        MAX_SUPPLY_REACHED, INVALID_RECIPIENT, PUBLIC_SALE_NOT_STARTED, WHITELIST_MINT, MAX_NFT_PER_ADDRESS
+        MAX_SUPPLY_REACHED, INVALID_RECIPIENT, PUBLIC_SALE_NOT_STARTED, WHITELIST_MINT,
+        MAX_NFT_PER_ADDRESS
     };
-    use terracon_prestige_card::nft_mint::interface::{MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT, WHITELIST_FREE_MINT_END};
+    use terracon_prestige_card::nft_mint::interface::{
+        MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
+        WHITELIST_FREE_MINT_END
+    };
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -34,6 +38,9 @@ mod NFTMint {
         whitelist_merkle_root: felt252,
         next_token_id: u256,
         whitelisted_address: LegacyMap::<ContractAddress, bool>,
+        // (owner,index)-> token_id
+        owned_tokens: LegacyMap::<(ContractAddress, u256), u256>,
+        owned_tokens_len: LegacyMap::<ContractAddress, u256>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -78,6 +85,7 @@ mod NFTMint {
         let mut token_id = 1;
         while token_id <= OWNER_FREE_MINT_AMOUNT {
             let token_uri: felt252 = 'https://bit.ly/497SFF6';
+            self._add_token_to(owner,token_id);
             self.erc721._mint(owner, token_id);
             self.erc721._set_token_uri(token_id, token_uri);
             token_id += 1;
@@ -87,11 +95,23 @@ mod NFTMint {
 
     #[abi(embed_v0)]
     impl NFTMint of INFTMint<ContractState> {
+
+        fn total_supply(self: @ContractState) -> u256 {
+            self.next_token_id.read()
+        }
+
+        fn token_of_owner_by_index(self: @ContractState, user:ContractAddress, index:u256) -> u256 {
+            self.owned_tokens.read((user,index))
+        }
+
         fn mint(ref self: ContractState, recipient: ContractAddress, quantity: u256) {
             assert(!recipient.is_zero(), INVALID_RECIPIENT);
             let next_token_id = self.next_token_id.read();
             assert(next_token_id + quantity <= MAX_SUPPLY, MAX_SUPPLY_REACHED);
-            assert(self.erc721.balance_of(recipient) + quantity <= MAX_TOKENS_PER_ADDRESS, MAX_NFT_PER_ADDRESS);
+            assert(
+                self.erc721.balance_of(recipient) + quantity <= MAX_TOKENS_PER_ADDRESS,
+                MAX_NFT_PER_ADDRESS
+            );
 
             let owner: ContractAddress = self.ownable.owner();
 
@@ -106,6 +126,7 @@ mod NFTMint {
                     /// @dev Check if the recipient is whitelisted
                     assert(whitelisted, WHITELIST_MINT);
                     let token_uri: felt252 = 'https://bit.ly/497SFF6';
+                    self._add_token_to(recipient,token_id);
                     self.erc721._mint(recipient, token_id);
                     self.erc721._set_token_uri(token_id, token_uri);
                 } else {
@@ -116,11 +137,11 @@ mod NFTMint {
                             .try_into()
                             .unwrap()
                     };
-                    
                     eth_dispatcher.transfer_from(get_caller_address(), owner, MINTING_FEE);
                     // Check if the correct minting fee is paid
                     // assert(/* Payment check */, INSUFFICIENT_PAYMENT);
                     let token_uri: felt252 = 'https://bit.ly/497SFF6';
+                    self._add_token_to(recipient,token_id);
                     self.erc721._mint(recipient, token_id);
                     self.erc721._set_token_uri(token_id, token_uri);
                 }
@@ -143,10 +164,7 @@ mod NFTMint {
             };
         }
 
-        fn whitelist_addresses(
-            ref self: ContractState,
-            address_list: Array<ContractAddress>
-        ) {
+        fn whitelist_addresses(ref self: ContractState, address_list: Array<ContractAddress>) {
             self.ownable.assert_only_owner();
             self._whitelist_array(address_list);
         }
@@ -155,6 +173,31 @@ mod NFTMint {
     /// @dev Internal Functions implementation for the NFT Mint contract
     #[generate_trait]
     impl InternalFunctions of InternalFunctionsTrait {
+        fn _add_token_to(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            let owned_len = self.owned_tokens_len.read(to);
+            self.owned_tokens.write((to, owned_len), token_id);
+            self.owned_tokens_len.write(to, owned_len + 1);
+        }
+
+        fn _remove_token_from(ref self: ContractState, from: ContractAddress, token_id: u256) {
+            let owned_len = self.owned_tokens_len.read(from);
+            let mut i = 0;
+            loop {
+                if (i == owned_len) {
+                    break;
+                }
+                if token_id == self.owned_tokens.read((from, i)) {
+                    let last = self.owned_tokens.read((from, owned_len - 1));
+                    self.owned_tokens.write((from, i), last);
+                    self.owned_tokens.write((from, owned_len - 1), Zeroable::zero());
+                    self.owned_tokens_len.write(from, owned_len - 1);
+                    break;
+                }
+                i = i + 1;
+            };
+        }
+        
+
         /// @dev Registers the address and initializes their whitelist status to true (can mint)
         fn _whitelist_array(ref self: ContractState, address_list: Array<ContractAddress>) {
             let mut i = 0;

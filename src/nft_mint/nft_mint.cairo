@@ -1,3 +1,18 @@
+#[derive(Drop, Serde, starknet::Store)]
+struct Attribute {
+    trait_type: felt252,
+    value: felt252,
+}
+
+#[derive(Drop, Serde, starknet::Store)]
+struct TokenMetadata {
+    name: felt252,
+    description: felt252,
+    image: felt252,
+    external_url: felt252,
+}
+
+
 #[starknet::contract]
 mod NFTMint {
     use core::zeroable::Zeroable;
@@ -15,6 +30,7 @@ mod NFTMint {
         MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
         WHITELIST_FREE_MINT_END
     };
+    use super::{TokenMetadata, Attribute};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -39,6 +55,9 @@ mod NFTMint {
         // (owner,index)-> token_id
         owned_tokens: LegacyMap::<(ContractAddress, u256), u256>,
         owned_tokens_len: LegacyMap::<ContractAddress, u256>,
+        token_metadata: LegacyMap<u256, TokenMetadata>,
+        token_attributes: LegacyMap<(u256, u32), Attribute>,
+        token_attributes_len: LegacyMap<u256, u32>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]

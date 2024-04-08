@@ -9,7 +9,7 @@ const WHITELIST_FREE_MINT_END: u256 = 437; // 437
 #[starknet::interface]
 pub trait INFTMint<TContractState> {
     fn total_supply(self: @TContractState,) -> u256;
-    fn token_of_owner_by_index(self: @TContractState, user:ContractAddress, index:u256) -> u256 ;
+    fn token_of_owner_by_index(self: @TContractState, user: ContractAddress, index: u256) -> u256;
 
     fn mint(ref self: TContractState, recipient: ContractAddress, quantity: u256);
     fn set_public_sale_open(ref self: TContractState, public_sale_open: bool);

@@ -2,7 +2,7 @@
 mod NFTMint {
     use core::zeroable::Zeroable;
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address};
-    use openzeppelin::token::erc721::ERC721Component;
+    use openzeppelin::token::erc721::{ERC721Component, interface};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -22,8 +22,6 @@ mod NFTMint {
 
     #[abi(embed_v0)]
     impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
@@ -61,7 +59,7 @@ mod NFTMint {
         #[flat]
         OwnableEvent: OwnableComponent::Event
     }
-    
+
     #[derive(Drop, starknet::Event)]
     struct PublicSaleOpen {
         time: u64
@@ -85,7 +83,7 @@ mod NFTMint {
         let mut token_id = 1;
         while token_id <= OWNER_FREE_MINT_AMOUNT {
             let token_uri: felt252 = 'https://bit.ly/497SFF6';
-            self._add_token_to(owner,token_id);
+            self._add_token_to(owner, token_id);
             self.erc721._mint(owner, token_id);
             self.erc721._set_token_uri(token_id, token_uri);
             token_id += 1;
@@ -94,14 +92,125 @@ mod NFTMint {
     }
 
     #[abi(embed_v0)]
-    impl NFTMint of INFTMint<ContractState> {
+    impl ERC721Impl of interface::IERC721<ContractState> {
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+            assert(!account.is_zero(), ERC721Component::Errors::INVALID_ACCOUNT);
+            self.erc721.ERC721_balances.read(account)
+        }
 
+        fn owner_of(self: @ContractState, token_id: u256) -> ContractAddress {
+            self.erc721._owner_of(token_id)
+        }
+
+        fn safe_transfer_from(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            token_id: u256,
+            data: Span<felt252>
+        ) {
+            assert(
+                self.erc721._is_approved_or_owner(get_caller_address(), token_id),
+                ERC721Component::Errors::UNAUTHORIZED
+            );
+            self._remove_token_from(from, token_id);
+            self._add_token_to(to, token_id);
+            self.erc721._safe_transfer(from, to, token_id, data);
+        }
+
+        fn transfer_from(
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256
+        ) {
+            assert(
+                self.erc721._is_approved_or_owner(get_caller_address(), token_id),
+                ERC721Component::Errors::UNAUTHORIZED
+            );
+            self._remove_token_from(from, token_id);
+            self._add_token_to(to, token_id);
+            self.erc721._transfer(from, to, token_id);
+        }
+
+        fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            let owner = self.erc721._owner_of(token_id);
+
+            let caller = get_caller_address();
+            assert(
+                owner == caller || self.is_approved_for_all(owner, caller),
+                ERC721Component::Errors::UNAUTHORIZED
+            );
+            self.erc721._approve(to, token_id);
+        }
+
+        fn set_approval_for_all(
+            ref self: ContractState, operator: ContractAddress, approved: bool
+        ) {
+            self.erc721._set_approval_for_all(get_caller_address(), operator, approved)
+        }
+
+        fn get_approved(self: @ContractState, token_id: u256) -> ContractAddress {
+            assert(self.erc721._exists(token_id), ERC721Component::Errors::INVALID_TOKEN_ID);
+            self.erc721.ERC721_token_approvals.read(token_id)
+        }
+
+        fn is_approved_for_all(
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        ) -> bool {
+            self.erc721.ERC721_operator_approvals.read((owner, operator))
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ERC721CamelOnlyImpl of interface::IERC721CamelOnly<ContractState> {
+        fn balanceOf(self: @ContractState, account: ContractAddress) -> u256 {
+            self.balance_of(account)
+        }
+
+        fn ownerOf(self: @ContractState, tokenId: u256) -> ContractAddress {
+            self.owner_of(tokenId)
+        }
+
+        fn safeTransferFrom(
+            ref self: ContractState,
+            from: ContractAddress,
+            to: ContractAddress,
+            tokenId: u256,
+            data: Span<felt252>
+        ) {
+            self.safe_transfer_from(from, to, tokenId, data);
+        }
+
+        fn transferFrom(
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, tokenId: u256
+        ) {
+            self.transfer_from(from, to, tokenId);
+        }
+
+        fn setApprovalForAll(ref self: ContractState, operator: ContractAddress, approved: bool) {
+            self.set_approval_for_all(operator, approved)
+        }
+
+        fn getApproved(self: @ContractState, tokenId: u256) -> ContractAddress {
+            self.get_approved(tokenId)
+        }
+
+        fn isApprovedForAll(
+            self: @ContractState, owner: ContractAddress, operator: ContractAddress
+        ) -> bool {
+            self.is_approved_for_all(owner, operator)
+        }
+    }
+
+
+    #[abi(embed_v0)]
+    impl NFTMint of INFTMint<ContractState> {
         fn total_supply(self: @ContractState) -> u256 {
             self.next_token_id.read()
         }
 
-        fn token_of_owner_by_index(self: @ContractState, user:ContractAddress, index:u256) -> u256 {
-            self.owned_tokens.read((user,index))
+        fn token_of_owner_by_index(
+            self: @ContractState, user: ContractAddress, index: u256
+        ) -> u256 {
+            self.owned_tokens.read((user, index))
         }
 
         fn mint(ref self: ContractState, recipient: ContractAddress, quantity: u256) {
@@ -126,7 +235,7 @@ mod NFTMint {
                     /// @dev Check if the recipient is whitelisted
                     assert(whitelisted, WHITELIST_MINT);
                     let token_uri: felt252 = 'https://bit.ly/497SFF6';
-                    self._add_token_to(recipient,token_id);
+                    self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
                     self.erc721._set_token_uri(token_id, token_uri);
                 } else {
@@ -141,7 +250,7 @@ mod NFTMint {
                     // Check if the correct minting fee is paid
                     // assert(/* Payment check */, INSUFFICIENT_PAYMENT);
                     let token_uri: felt252 = 'https://bit.ly/497SFF6';
-                    self._add_token_to(recipient,token_id);
+                    self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
                     self.erc721._set_token_uri(token_id, token_uri);
                 }
@@ -196,7 +305,7 @@ mod NFTMint {
                 i = i + 1;
             };
         }
-        
+
 
         /// @dev Registers the address and initializes their whitelist status to true (can mint)
         fn _whitelist_array(ref self: ContractState, address_list: Array<ContractAddress>) {

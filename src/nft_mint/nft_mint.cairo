@@ -1,5 +1,6 @@
 #[starknet::contract]
 mod NFTMint {
+    use core::option::OptionTrait;
     use core::array::SpanTrait;
     use openzeppelin::token::erc721::interface::IERC721;
     use core::zeroable::Zeroable;
@@ -19,7 +20,6 @@ mod NFTMint {
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-
 
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
@@ -46,6 +46,7 @@ mod NFTMint {
         token_attributes_len: LegacyMap<u256, u32>,
         is_revealed: LegacyMap<u256, bool>,
         authorized_addresses: LegacyMap<ContractAddress, bool>,
+        payment_tokens: LegacyMap<ContractAddress, u256>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -126,6 +127,14 @@ mod NFTMint {
             token_id += 1;
         };
         self.next_token_id.write(token_id);
+        self
+            .payment_tokens
+            .write(
+                0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7 // ETH Contract Address
+                    .try_into()
+                    .unwrap(),
+                MINTING_FEE
+            );
     }
 
     #[abi(embed_v0)]
@@ -296,18 +305,6 @@ mod NFTMint {
             self.is_revealed.read(token_id,)
         }
 
-        fn add_authorized_address(ref self: ContractState, address: ContractAddress) {
-            self.ownable.assert_only_owner();
-            self.authorized_addresses.write(address, true);
-            self.emit(Event::AddAuthAddress(AddAuthAddress { address: address }));
-        }
-
-        fn remove_authorized_address(ref self: ContractState, address: ContractAddress) {
-            self.ownable.assert_only_owner();
-            self.authorized_addresses.write(address, false);
-            self.emit(Event::RemoveAuthAddress(RemoveAuthAddress { address: address }));
-        }
-
         fn is_authorized(self: @ContractState, address: ContractAddress) -> bool {
             self.authorized_addresses.read(address)
         }
@@ -323,7 +320,6 @@ mod NFTMint {
         fn is_whitelisted(self: @ContractState, user: ContractAddress) -> bool {
             self.is_whitelisted.read(user)
         }
-
         fn all_whitelist_addresses(self: @ContractState,) -> Array<ContractAddress> {
             let whitelist_len = self.whitelisted_address_len.read();
             let mut whitelist: Array<ContractAddress> = ArrayTrait::new();
@@ -335,9 +331,27 @@ mod NFTMint {
             whitelist
         }
 
+        fn add_authorized_address(ref self: ContractState, address: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.authorized_addresses.write(address, true);
+            self.emit(Event::AddAuthAddress(AddAuthAddress { address: address }));
+        }
+
+        fn remove_authorized_address(ref self: ContractState, address: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.authorized_addresses.write(address, false);
+            self.emit(Event::RemoveAuthAddress(RemoveAuthAddress { address: address }));
+        }
+
+
+        fn set_payment_tokens(ref self: ContractState, token: ContractAddress, amount: u256) {
+            self.ownable.assert_only_owner();
+            assert(amount != 0, Errors::INVALID_FEE_AMOUNT);
+            self.payment_tokens.write(token, amount);
+        }
 
         fn update_token_attributes(
-            ref self: ContractState, token_id: u256, mut new_attributes: Span::<Attribute>
+            ref self: ContractState, token_id: u256, mut new_attributes: Span::<Attribute>,
         ) {
             assert(self.is_authorized(get_caller_address()), Errors::NOT_AUTHORIZED);
             let attributes_len = new_attributes.len();
@@ -360,7 +374,12 @@ mod NFTMint {
                 );
         }
 
-        fn mint(ref self: ContractState, recipient: ContractAddress, quantity: u256) {
+        fn mint(
+            ref self: ContractState,
+            recipient: ContractAddress,
+            quantity: u256,
+            fee_token: ContractAddress
+        ) {
             assert(!recipient.is_zero(), Errors::INVALID_RECIPIENT);
             let next_token_id = self.next_token_id.read();
             assert(next_token_id + quantity <= MAX_SUPPLY, Errors::MAX_SUPPLY_REACHED);
@@ -369,20 +388,19 @@ mod NFTMint {
                 Errors::MAX_NFT_PER_ADDRESS
             );
 
-            let owner: ContractAddress = self.ownable.owner();
-
-            let whitelisted = self.is_whitelisted.read(recipient);
-
             let mut token_id = next_token_id;
             let mut minted_quantity = 0;
 
             while minted_quantity < quantity {
                 if token_id <= WHITELIST_FREE_MINT_END {
-                    assert(self.free_mint_open.read() == true, Errors::FREE_MINT_NOT_STARTED);
+                    assert(self.free_mint_open.read(), Errors::FREE_MINT_NOT_STARTED);
                     // TODO: Check if the recipient is in the whitelist using the Merkle proof
                     /// @dev Check if the recipient is whitelisted
+                    let whitelisted = self.is_whitelisted.read(recipient);
+
                     assert(quantity == 1, Errors::WHITELIST_LIMIT);
                     assert(whitelisted, Errors::WHITELIST_MINT);
+
                     let mut whitelist_len = self.whitelisted_address_len.read();
                     whitelist_len = self._remove_whitelist(recipient, whitelist_len);
                     self.whitelisted_address_len.write(whitelist_len);
@@ -390,15 +408,15 @@ mod NFTMint {
                     self.erc721._mint(recipient, token_id);
                 } else {
                     /// @dev Check if the public sale is open
-                    assert(self.public_sale_open.read() == true, Errors::PUBLIC_SALE_NOT_STARTED);
-                    let eth_dispatcher = IERC20Dispatcher {
-                        contract_address: 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7 // ETH Contract Address
-                            .try_into()
-                            .unwrap()
-                    };
-                    eth_dispatcher.transfer_from(get_caller_address(), owner, MINTING_FEE);
-                    // Check if the correct minting fee is paid
-                    // assert(/* Payment check */, INSUFFICIENT_PAYMENT);
+                    assert(self.public_sale_open.read(), Errors::PUBLIC_SALE_NOT_STARTED);
+                    let mint_fee = self.payment_tokens.read(fee_token);
+
+                    assert(mint_fee != 0, Errors::INVALID_FEE_TOKEN);
+                    let token_dispatcher = IERC20Dispatcher { contract_address: fee_token };
+                    let success=token_dispatcher
+                        .transfer_from(get_caller_address(), self.ownable.owner(), mint_fee);
+                    assert(success, Errors::TRANSFER_FAILED);
+
                     self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
                 }

@@ -24,6 +24,7 @@ pub trait INFTMint<TContractState> {
     fn free_mint_open(self: @TContractState,) -> bool;
     fn is_whitelisted(self: @TContractState, user: ContractAddress) -> bool;
     fn all_whitelist_addresses(self: @TContractState,) -> Array<ContractAddress>;
+    fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
 
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
@@ -37,7 +38,12 @@ pub trait INFTMint<TContractState> {
         proofs: Span::<felt252>
     );
 
-    fn mint(ref self: TContractState, recipient: ContractAddress, quantity: u256);
+    fn mint(
+        ref self: TContractState,
+        recipient: ContractAddress,
+        quantity: u256,
+        fee_token: ContractAddress
+    );
     fn set_public_sale_open(ref self: TContractState, public_sale_open: bool);
     fn set_free_mint(ref self: TContractState, mint_open: bool);
 

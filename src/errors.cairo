@@ -3,7 +3,6 @@ pub mod Errors {
     const INVALID_RECIPIENT: felt252 = 'ERC721: invalid recipient';
     const PUBLIC_SALE_NOT_STARTED: felt252 = 'Public sale has not started';
     const FREE_MINT_NOT_STARTED: felt252 = 'Free mint has not started';
-
     const WHITELIST_MINT: felt252 = 'Whitelised mint only';
     const WHITELIST_LIMIT: felt252 = 'Whitelist limit ';
     const MAX_NFT_PER_ADDRESS: felt252 = 'Maximum NFT per address reached';
@@ -12,5 +11,8 @@ pub mod Errors {
     const INVALID_TOKEN_ID: felt252 = 'ERC721: invalid token ID';
     const NOT_AUTHORIZED: felt252 = 'Caller is not authorized';
     const ALREADY_WHITELISTED: felt252 = 'Address already whitelisted';
+    const INVALID_FEE_AMOUNT: felt252 = 'Invalid fee amount';
+    const INVALID_FEE_TOKEN: felt252 = 'Invalid fee token';
+    const TRANSFER_FAILED: felt252 = 'Transfer failed';
 }
 

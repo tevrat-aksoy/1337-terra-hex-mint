@@ -32,9 +32,12 @@ mod NFTMint {
     #[storage]
     struct Storage {
         public_sale_open: bool,
+        free_mint_open: bool,
         whitelist_merkle_root: felt252,
         next_token_id: u256,
-        whitelisted_address: LegacyMap::<ContractAddress, bool>,
+        whitelisted_address: LegacyMap::<u32, ContractAddress>,
+        whitelisted_address_len: u32,
+        is_whitelisted: LegacyMap::<ContractAddress, bool>,
         // (owner,index)-> token_id
         owned_tokens: LegacyMap::<(ContractAddress, u256), u256>,
         owned_tokens_len: LegacyMap::<ContractAddress, u256>,
@@ -55,6 +58,7 @@ mod NFTMint {
     #[derive(Drop, starknet::Event)]
     enum Event {
         PublicSaleOpen: PublicSaleOpen,
+        FreeMintOpen: FreeMintOpen,
         PublicSaleClose: PublicSaleClose,
         AddAuthAddress: AddAuthAddress,
         RemoveAuthAddress: RemoveAuthAddress,
@@ -72,6 +76,12 @@ mod NFTMint {
     struct PublicSaleOpen {
         time: u64
     }
+
+    #[derive(Drop, starknet::Event)]
+    struct FreeMintOpen {
+        time: u64
+    }
+
 
     #[derive(Drop, starknet::Event)]
     struct PublicSaleClose {
@@ -299,8 +309,32 @@ mod NFTMint {
         }
 
         fn is_authorized(self: @ContractState, address: ContractAddress) -> bool {
-            return self.authorized_addresses.read(address);
+            self.authorized_addresses.read(address)
         }
+
+        fn public_sale_open(self: @ContractState,) -> bool {
+            self.public_sale_open.read()
+        }
+
+        fn free_mint_open(self: @ContractState,) -> bool {
+            self.free_mint_open.read()
+        }
+
+        fn is_whitelisted(self: @ContractState, user: ContractAddress) -> bool {
+            self.is_whitelisted.read(user)
+        }
+
+        fn all_whitelist_addresses(self: @ContractState,) -> Array<ContractAddress> {
+            let whitelist_len = self.whitelisted_address_len.read();
+            let mut whitelist: Array<ContractAddress> = ArrayTrait::new();
+            let mut i = 0;
+            while i < whitelist_len {
+                whitelist.append(self.whitelisted_address.read(i));
+                i = i + 1;
+            };
+            whitelist
+        }
+
 
         fn update_token_attributes(
             ref self: ContractState, token_id: u256, mut new_attributes: Span::<Attribute>
@@ -337,16 +371,21 @@ mod NFTMint {
 
             let owner: ContractAddress = self.ownable.owner();
 
-            let whitelisted = self._is_whitelisted(recipient);
+            let whitelisted = self.is_whitelisted.read(recipient);
 
             let mut token_id = next_token_id;
             let mut minted_quantity = 0;
 
             while minted_quantity < quantity {
                 if token_id <= WHITELIST_FREE_MINT_END {
+                    assert(self.free_mint_open.read() == true, Errors::FREE_MINT_NOT_STARTED);
                     // TODO: Check if the recipient is in the whitelist using the Merkle proof
                     /// @dev Check if the recipient is whitelisted
+                    assert(quantity == 1, Errors::WHITELIST_LIMIT);
                     assert(whitelisted, Errors::WHITELIST_MINT);
+                    let mut whitelist_len = self.whitelisted_address_len.read();
+                    whitelist_len = self._remove_whitelist(recipient, whitelist_len);
+                    self.whitelisted_address_len.write(whitelist_len);
                     self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
                 } else {
@@ -372,15 +411,15 @@ mod NFTMint {
 
         fn reveal_token(
             ref self: ContractState,
-            recipient: ContractAddress,
             token_id: u256,
             metadata: TokenMetadata,
-            mut attributes: Span::<Attribute>
+            mut attributes: Span::<Attribute>,
+            proofs: Span::<felt252>
         ) {
             assert(!self.is_revealed(token_id), Errors::TOKEN_ALREADY_REVALED);
             let owner = self.erc721.owner_of(token_id);
             let caller = get_caller_address();
-            assert(owner == caller, Errors::INVALID_RECIPIENT);
+            assert(owner == caller, ERC721Component::Errors::UNAUTHORIZED);
             // TODO  check input
 
             self.token_metadata.write(token_id, metadata);
@@ -413,9 +452,32 @@ mod NFTMint {
             };
         }
 
-        fn whitelist_addresses(ref self: ContractState, address_list: Array<ContractAddress>) {
+        fn set_free_mint(ref self: ContractState, mint_open: bool) {
             self.ownable.assert_only_owner();
-            self._whitelist_array(address_list);
+            self.free_mint_open.write(mint_open);
+            let current_time = get_block_timestamp();
+            if mint_open {
+                self.emit(Event::FreeMintOpen(FreeMintOpen { time: current_time }));
+            }
+        }
+
+
+        fn add_whitelist_addresses(ref self: ContractState, address_list: Array<ContractAddress>) {
+            self.ownable.assert_only_owner();
+            let whitelist_len = self.whitelisted_address_len.read();
+            self._add_whitelist(address_list, whitelist_len);
+        }
+
+        fn remove_whitelist_addresses(
+            ref self: ContractState, address_list: Array<ContractAddress>
+        ) {
+            self.ownable.assert_only_owner();
+            let mut whitelist_len = self.whitelisted_address_len.read();
+            let mut i = 0;
+            while (i < address_list.len()) {
+                whitelist_len = self._remove_whitelist(*address_list[i], whitelist_len);
+            };
+            self.whitelisted_address_len.write(whitelist_len);
         }
     }
 
@@ -447,22 +509,38 @@ mod NFTMint {
         }
 
         /// @dev Registers the address and initializes their whitelist status to true (can mint)
-        fn _whitelist_array(ref self: ContractState, address_list: Array<ContractAddress>) {
+        fn _add_whitelist(
+            ref self: ContractState, address_list: Array<ContractAddress>, whitelist_len: u32
+        ) {
             let mut i = 0;
-            while i < address_list
-                .len() {
-                    self.whitelisted_address.write(*address_list[i], true);
-                    self
-                        .emit(
-                            Event::WhitelistAddress(WhitelistAddress { address: *address_list[i] })
-                        );
-                    i += 1;
-                };
+            while (i < address_list.len()) {
+                let address = *address_list[i];
+                assert(self.is_whitelisted.read(address) == false, Errors::ALREADY_WHITELISTED);
+                self.whitelisted_address.write(whitelist_len + i, address);
+                self.is_whitelisted.write(*address_list[i], true);
+                self.emit(Event::WhitelistAddress(WhitelistAddress { address: address }));
+                i += 1;
+            };
+            self.whitelisted_address_len.write(whitelist_len + i);
         }
 
-        /// @dev Check whether an address is whitelisted
-        fn _is_whitelisted(self: @ContractState, address: ContractAddress) -> bool {
-            self.whitelisted_address.read(address)
+        fn _remove_whitelist(
+            ref self: ContractState, address: ContractAddress, whitelist_len: u32
+        ) -> u32 {
+            let mut i = 0;
+            loop {
+                if (i == whitelist_len) {
+                    break whitelist_len;
+                }
+                if (address == self.whitelisted_address.read(i)) {
+                    let last_address = self.whitelisted_address.read(whitelist_len - 1);
+                    self.whitelisted_address.write(i, last_address);
+                    self.whitelisted_address.write(whitelist_len - 1, Zeroable::zero());
+                    self.is_whitelisted.write(address, false);
+                    break whitelist_len - 1;
+                }
+                i += 1;
+            }
         }
     }
 }

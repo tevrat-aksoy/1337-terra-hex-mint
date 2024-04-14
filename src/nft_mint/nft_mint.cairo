@@ -413,7 +413,7 @@ mod NFTMint {
 
                     assert(mint_fee != 0, Errors::INVALID_FEE_TOKEN);
                     let token_dispatcher = IERC20Dispatcher { contract_address: fee_token };
-                    let success=token_dispatcher
+                    let success = token_dispatcher
                         .transfer_from(get_caller_address(), self.ownable.owner(), mint_fee);
                     assert(success, Errors::TRANSFER_FAILED);
 

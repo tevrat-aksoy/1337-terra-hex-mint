@@ -24,8 +24,8 @@ pub trait INFTMint<TContractState> {
     fn free_mint_open(self: @TContractState,) -> bool;
     fn is_whitelisted(self: @TContractState, user: ContractAddress) -> bool;
     fn all_whitelist_addresses(self: @TContractState,) -> Array<ContractAddress>;
+    fn mint_fee(self: @TContractState, token: ContractAddress) -> u256;
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
-
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
     );

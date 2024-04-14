@@ -320,6 +320,7 @@ mod NFTMint {
         fn is_whitelisted(self: @ContractState, user: ContractAddress) -> bool {
             self.is_whitelisted.read(user)
         }
+
         fn all_whitelist_addresses(self: @ContractState,) -> Array<ContractAddress> {
             let whitelist_len = self.whitelisted_address_len.read();
             let mut whitelist: Array<ContractAddress> = ArrayTrait::new();
@@ -329,6 +330,10 @@ mod NFTMint {
                 i = i + 1;
             };
             whitelist
+        }
+
+        fn mint_fee(self: @ContractState, token: ContractAddress) -> u256 {
+            self.payment_tokens.read(token)
         }
 
         fn add_authorized_address(ref self: ContractState, address: ContractAddress) {

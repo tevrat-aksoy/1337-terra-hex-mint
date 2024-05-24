@@ -488,7 +488,7 @@ mod NFTMint {
             let metadata= TokenMetadata{
                 name: format!("{}", name),
                 description: format!("{} is a character from Terracon Quest Autonomous World.", name),
-                image:format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png", name),
+                image:format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png", token_id),
                 external_url:format!("https://terracon.quest/{}", name),
             };
 

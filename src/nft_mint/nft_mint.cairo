@@ -15,6 +15,13 @@ mod NFTMint {
         MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
         WHITELIST_FREE_MINT_END
     };
+
+    use core::hash::{LegacyHash, HashStateTrait};
+    use alexandria_merkle_tree::merkle_tree::{
+        Hasher, MerkleTree, pedersen::PedersenHasherImpl, MerkleTreeTrait
+    };
+    use core::poseidon::{poseidon_hash_span,hades_permutation};
+
     use terracon_prestige_card::types::{TokenMetadata, Attribute};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
@@ -33,7 +40,7 @@ mod NFTMint {
     struct Storage {
         public_sale_open: bool,
         free_mint_open: bool,
-        whitelist_merkle_root: felt252,
+        merkle_root: felt252,
         next_token_id: u256,
         whitelisted_address: LegacyMap::<u32, ContractAddress>,
         whitelisted_address_len: u32,
@@ -336,6 +343,33 @@ mod NFTMint {
             self.payment_tokens.read(token)
         }
 
+        fn get_root_for(
+            self: @ContractState, name: felt252,tokenId: u128,mut attributes: Span::<Attribute>,proof: Span::<felt252>
+        ) -> felt252 {
+            let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeTrait::new();
+            let mut data = ArrayTrait::<felt252>::new();
+            data.append(name);
+            data.append(tokenId.into());
+
+            loop {
+                match attributes.pop_front() {
+                    Option::Some(attribute) => {
+                        data.append( *attribute.trait_type);
+                        data.append( *attribute.value);
+                    },
+                    Option::None => { break; }
+                };
+            };
+
+            let leaf= poseidon_hash_span(data.span());
+            merkle_tree.compute_root(leaf, proof)
+        }
+
+        fn get_merkle_root(ref self: ContractState, )->felt252 {
+            self.merkle_root.read()
+        }
+
+
         fn add_authorized_address(ref self: ContractState, address: ContractAddress) {
             self.ownable.assert_only_owner();
             self.authorized_addresses.write(address, true);
@@ -435,7 +469,7 @@ mod NFTMint {
         fn reveal_token(
             ref self: ContractState,
             token_id: u256,
-            metadata: TokenMetadata,
+            name:felt252,
             mut attributes: Span::<Attribute>,
             proofs: Span::<felt252>
         ) {
@@ -445,9 +479,20 @@ mod NFTMint {
             assert(owner == caller, ERC721Component::Errors::UNAUTHORIZED);
             // TODO  check input
 
-            self.token_metadata.write(token_id, metadata);
             let attributes_len = attributes.len();
             let mut index = 0;
+
+            let root= self.get_root_for(name, token_id.low,attributes, proofs );
+            assert(root == self.merkle_root.read(), Errors::INVALID_PROOF);
+
+            let metadata= TokenMetadata{
+                name: format!("{}", name),
+                description: format!("{} is a character from Terracon Quest Autonomous World.", name),
+                image:format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png", name),
+                external_url:format!("https://terracon.quest/{}", name),
+            };
+
+            self.token_metadata.write(token_id, metadata);
 
             loop {
                 match attributes.pop_front() {
@@ -483,7 +528,10 @@ mod NFTMint {
                 self.emit(Event::FreeMintOpen(FreeMintOpen { time: current_time }));
             }
         }
-
+        fn set_merkle_root(ref self: ContractState, root: felt252) {
+            self.ownable.assert_only_owner();
+            self.merkle_root.write(root);
+        }
 
         fn add_whitelist_addresses(ref self: ContractState, address_list: Array<ContractAddress>) {
             self.ownable.assert_only_owner();

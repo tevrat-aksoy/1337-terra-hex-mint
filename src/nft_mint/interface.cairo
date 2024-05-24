@@ -25,6 +25,12 @@ pub trait INFTMint<TContractState> {
     fn is_whitelisted(self: @TContractState, user: ContractAddress) -> bool;
     fn all_whitelist_addresses(self: @TContractState,) -> Array<ContractAddress>;
     fn mint_fee(self: @TContractState, token: ContractAddress) -> u256;
+
+    fn get_root_for(
+        self: @TContractState, name: felt252,tokenId: u128,attributes:  Span::<Attribute>,proof: Span::<felt252>
+    ) -> felt252 ;
+    fn get_merkle_root(ref self: TContractState, )->felt252 ;
+
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
@@ -33,7 +39,7 @@ pub trait INFTMint<TContractState> {
     fn reveal_token(
         ref self: TContractState,
         token_id: u256,
-        metadata: TokenMetadata,
+        name: felt252,
         attributes: Span::<Attribute>,
         proofs: Span::<felt252>
     );
@@ -46,6 +52,7 @@ pub trait INFTMint<TContractState> {
     );
     fn set_public_sale_open(ref self: TContractState, public_sale_open: bool);
     fn set_free_mint(ref self: TContractState, mint_open: bool);
+    fn set_merkle_root(ref self: TContractState, root: felt252);
 
     fn add_whitelist_addresses(ref self: TContractState, address_list: Array<ContractAddress>);
     fn remove_whitelist_addresses(ref self: TContractState, address_list: Array<ContractAddress>);

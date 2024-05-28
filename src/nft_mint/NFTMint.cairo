@@ -9,9 +9,8 @@ mod NFTMint {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use terracon_prestige_card::nft_mint::{INFTMint};
     use terracon_prestige_card::errors::Errors;
-    use terracon_prestige_card::nft_mint::interface::{
+    use terracon_prestige_card::nft_mint::interface::{INFTMint,
         MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
         WHITELIST_FREE_MINT_END
     };

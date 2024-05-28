@@ -1,1 +1,1 @@
-tests::test_nft_mint::test_init
+tests::test_nft_mint::test_reveal

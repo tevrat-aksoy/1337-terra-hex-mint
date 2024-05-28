@@ -7,7 +7,7 @@ edition = "2023_10"
 
 [dependencies]
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.11.0" }
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.21.0" }
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry", tag = "v0.24.0" }
 starknet = "2.6.3"
 alexandria_merkle_tree = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
 

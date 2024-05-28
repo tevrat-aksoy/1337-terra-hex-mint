@@ -13,8 +13,8 @@ source = "git+https://github.com/OpenZeppelin/cairo-contracts.git?tag=v0.11.0#a8
 
 [[package]]
 name = "snforge_std"
-version = "0.21.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.21.0#2996b8c1dd66b2715fc67e69578089f278a46790"
+version = "0.24.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.24.0#95e9fb09cb91b3c05295915179ee1b55bf923653"
 
 [[package]]
 name = "terracon_prestige_card"

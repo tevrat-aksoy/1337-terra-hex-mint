@@ -19,7 +19,7 @@ const WHITELIST_FREE_MINT_END: u256 = 437; // 437
 
 const ETH_ADDRESS :felt252=0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7; 
 
-const MERKLE_ROOT :felt252=02520458602344550470566127240359230647107649166976245036606031434610757149662; 
+const MERKLE_ROOT :felt252=0x02a7353251204e1f97d9f33b1b0d66d6106b0645423230c7f474ceb299cc2edc; 
 
 #[test]
 fn test_init() {
@@ -68,7 +68,7 @@ fn test_reveal() {
     attributes1.append(Attribute{trait_type:'occupation', value:'General'});
     attributes1.append(Attribute{trait_type:'special_trait', value:''});
 
-    let proof1=array![01268881024977045149399239396011044699604381431234109625210257457886424650771] ;
+    let proof1=array![0x2cebc99bcb1e42d0cc27bc68adeb6ad334343656537ce5b1c38af90bbf729d5,0x4f76cf6514f835fa810facb5c68faf88a2fe776c3039752eb6c6bc7d78689d1 ] ;
 
     let root_= NFTMint.get_root_for(name1, token_id1.low, attributes1.span(),proof1.span());
     root_.print();

@@ -347,8 +347,9 @@ mod NFTMint {
         ) -> felt252 {
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeTrait::new();
             let mut data = ArrayTrait::<felt252>::new();
-            data.append(name);
+
             data.append(tokenId.into());
+            data.append(name);
 
             loop {
                 match attributes.pop_front() {

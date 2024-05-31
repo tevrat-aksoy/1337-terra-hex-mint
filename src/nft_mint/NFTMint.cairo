@@ -10,8 +10,8 @@ mod NFTMint {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use terracon_prestige_card::errors::Errors;
-    use terracon_prestige_card::nft_mint::interface::{INFTMint,
-        MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
+    use terracon_prestige_card::nft_mint::interface::{
+        INFTMint, MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
         WHITELIST_FREE_MINT_END
     };
 
@@ -19,7 +19,7 @@ mod NFTMint {
     use alexandria_merkle_tree::merkle_tree::{
         Hasher, MerkleTree, pedersen::PedersenHasherImpl, MerkleTreeTrait
     };
-    use core::poseidon::{poseidon_hash_span,hades_permutation};
+    use core::poseidon::{poseidon_hash_span, hades_permutation};
 
     use terracon_prestige_card::types::{TokenMetadata, Attribute};
 
@@ -343,7 +343,11 @@ mod NFTMint {
         }
 
         fn get_root_for(
-            self: @ContractState, name: felt252,tokenId: u128,mut attributes: Span::<Attribute>,proof: Span::<felt252>
+            self: @ContractState,
+            name: felt252,
+            tokenId: u128,
+            mut attributes: Span::<Attribute>,
+            proof: Span::<felt252>
         ) -> felt252 {
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeTrait::new();
             let mut data = ArrayTrait::<felt252>::new();
@@ -354,18 +358,18 @@ mod NFTMint {
             loop {
                 match attributes.pop_front() {
                     Option::Some(attribute) => {
-                        data.append( *attribute.trait_type);
-                        data.append( *attribute.value);
+                        data.append(*attribute.trait_type);
+                        data.append(*attribute.value);
                     },
                     Option::None => { break; }
                 };
             };
 
-            let leaf= poseidon_hash_span(data.span());
+            let leaf = poseidon_hash_span(data.span());
             merkle_tree.compute_root(leaf, proof)
         }
 
-        fn get_merkle_root(ref self: ContractState, )->felt252 {
+        fn get_merkle_root(ref self: ContractState,) -> felt252 {
             self.merkle_root.read()
         }
 
@@ -469,7 +473,7 @@ mod NFTMint {
         fn reveal_token(
             ref self: ContractState,
             token_id: u256,
-            name:felt252,
+            name: felt252,
             mut attributes: Span::<Attribute>,
             proofs: Span::<felt252>
         ) {
@@ -482,14 +486,19 @@ mod NFTMint {
             let attributes_len = attributes.len();
             let mut index = 0;
 
-            let root= self.get_root_for(name, token_id.low,attributes, proofs );
+            let root = self.get_root_for(name, token_id.low, attributes, proofs);
             assert(root == self.merkle_root.read(), Errors::INVALID_PROOF);
 
-            let metadata= TokenMetadata{
+            let metadata = TokenMetadata {
                 name: format!("{}", name),
-                description: format!("{} is a character from Terracon Quest Autonomous World.", name),
-                image:format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png", token_id),
-                external_url:format!("https://terracon.quest/{}", name),
+                description: format!(
+                    "{} is a character from Terracon Quest Autonomous World.", name
+                ),
+                image: format!(
+                    "https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png",
+                    token_id
+                ),
+                external_url: format!("https://terracon.quest/{}", name),
             };
 
             self.token_metadata.write(token_id, metadata);

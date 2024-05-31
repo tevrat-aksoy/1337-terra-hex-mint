@@ -15,6 +15,5 @@ pub mod Errors {
     const INVALID_FEE_TOKEN: felt252 = 'Invalid fee token';
     const TRANSFER_FAILED: felt252 = 'Transfer failed';
     const INVALID_PROOF: felt252 = 'Invalid proof';
-
 }
 

@@ -33,7 +33,7 @@ mod ERC20Mock {
 
     #[constructor]
     fn constructor(ref self: ContractState, fixed_supply: u256, recipient: ContractAddress) {
-        let name =format!("ERC20Mock");
+        let name = format!("ERC20Mock");
         let symbol = format!("ERC20Mock");
 
         self.erc20.initializer(name, symbol);

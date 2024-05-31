@@ -27,9 +27,13 @@ pub trait INFTMint<TContractState> {
     fn mint_fee(self: @TContractState, token: ContractAddress) -> u256;
 
     fn get_root_for(
-        self: @TContractState, name: felt252,tokenId: u128,attributes:  Span::<Attribute>,proof: Span::<felt252>
-    ) -> felt252 ;
-    fn get_merkle_root(ref self: TContractState, )->felt252 ;
+        self: @TContractState,
+        name: felt252,
+        tokenId: u128,
+        attributes: Span::<Attribute>,
+        proof: Span::<felt252>
+    ) -> felt252;
+    fn get_merkle_root(ref self: TContractState,) -> felt252;
 
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
     fn update_token_attributes(

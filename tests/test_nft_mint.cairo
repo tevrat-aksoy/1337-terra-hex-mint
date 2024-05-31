@@ -76,7 +76,7 @@ fn test_reveal() {
     attributes1.append(Attribute { trait_type: 'birthplace', value: 'West Macedonia' });
     attributes1.append(Attribute { trait_type: 'ethnicity', value: 'Macedonians' });
     attributes1.append(Attribute { trait_type: 'occupation', value: 'General' });
-    attributes1.append(Attribute { trait_type: 'special_trait', value: '' });
+    attributes1.append(Attribute { trait_type: 'special_trait', value: 'None' });
 
     let proof1 = array![
         0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,

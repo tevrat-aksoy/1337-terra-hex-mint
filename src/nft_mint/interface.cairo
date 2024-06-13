@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use terracon_prestige_card::types::{TokenMetadata, Attribute};
+use terracon_prestige_card::types::{TokenMetadata, Attribute,Stat};
 
 const MAX_TOKENS_PER_ADDRESS: u256 = 2;
 const MINTING_FEE: u256 = 33000000000000000; // 0.033 ether
@@ -17,6 +17,8 @@ pub trait INFTMint<TContractState> {
     fn get_token_attribute_len(self: @TContractState, token_id: u256) -> u32;
     fn get_token_attributes(self: @TContractState, token_id: u256) -> Array<Attribute>;
     fn is_revealed(self: @TContractState, token_id: u256,) -> bool;
+    fn is_stats_revealed(self: @TContractState, token_id: u256,) -> bool;
+
     fn add_authorized_address(ref self: TContractState, address: ContractAddress);
     fn remove_authorized_address(ref self: TContractState, address: ContractAddress);
     fn is_authorized(self: @TContractState, address: ContractAddress) -> bool;
@@ -33,12 +35,25 @@ pub trait INFTMint<TContractState> {
         attributes: Span::<Attribute>,
         proof: Span::<felt252>
     ) -> felt252;
+
+    fn get_stat_root_for(
+        self: @TContractState,
+        tokenId: u128,
+        stats: Span::<Stat>,
+        proof: Span::<felt252>
+    ) -> felt252;
+
     fn get_merkle_root(ref self: TContractState,) -> felt252;
+    fn get_stat_merke_root(ref self: TContractState,) -> felt252;
 
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
     );
+
+    fn update_token_stats(
+        ref self: TContractState, token_id: u256,  new_stats: Span::<Stat>,
+    ) ;
 
     fn reveal_token(
         ref self: TContractState,
@@ -47,6 +62,13 @@ pub trait INFTMint<TContractState> {
         attributes: Span::<Attribute>,
         proofs: Span::<felt252>
     );
+
+    fn reveal_stats(
+        ref self: TContractState,
+        token_id: u256,
+         stats: Span::<Stat>,
+        proofs: Span::<felt252>
+    ) ;
 
     fn mint(
         ref self: TContractState,
@@ -57,12 +79,8 @@ pub trait INFTMint<TContractState> {
     fn set_public_sale_open(ref self: TContractState, public_sale_open: bool);
     fn set_free_mint(ref self: TContractState, mint_open: bool);
     fn set_merkle_root(ref self: TContractState, root: felt252);
-
+    fn set_stat_merkle_root(ref self: TContractState, root: felt252);
     fn add_whitelist_addresses(ref self: TContractState, address_list: Array<ContractAddress>);
     fn remove_whitelist_addresses(ref self: TContractState, address_list: Array<ContractAddress>);
-// fn set_whitelist_merkle_root(ref self: TContractState, whitelist_merkle_root: felt252);
-// fn get_whitelist_merkle_root(self: @TContractState) -> felt252;
-// fn get_whitelist_allocation(
-//     self: @TContractState, account: ContractAddress, allocation: felt252, proof: Span<felt252>
-// ) -> felt252;
+
 }

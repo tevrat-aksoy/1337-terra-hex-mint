@@ -5,6 +5,8 @@ use terracon_prestige_card::nft_mint::interface::{
     INFTMint, INFTMintDispatcher, INFTMintDispatcherTrait
 };
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
+
 use starknet::{ContractAddress, deploy_syscall};
 use starknet::contract_address_const;
 use starknet::contract_address_try_from_felt252;
@@ -237,15 +239,15 @@ fn test_sale() {
         i+=1;
     };
 
-    'total'.print();
-    NFTMint.total_supply().print();
-
     cheat_caller_address(ETHContract.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
     ETHContract.approve(NFTMint.contract_address,1000 *MINTING_FEE );
 
+    let owner_balance= ETHContract.balance_of(_OWNER);
     cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
     NFTMint.mint(_ACCOUNT1, 2, ETHContract.contract_address);
 
+    assert(ETHContract.balance_of(_ACCOUNT1) == 998 *MINTING_FEE , 'Error:: balanceOf ac1');
+    assert(ETHContract.balance_of(_OWNER) == owner_balance+2 *MINTING_FEE , 'Error:: balanceOf owner');
 
     assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+1) == _ACCOUNT1, 'Error:: token owner');
     assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+2) == _ACCOUNT1, 'Error:: token owner');
@@ -258,9 +260,71 @@ fn test_sale() {
     assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 0) == WHITELIST_FREE_MINT_END+1, 'Error:: tokens index1');
     assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 1) == WHITELIST_FREE_MINT_END+2, 'Error:: tokens index2');
 
+    cheat_caller_address(ETHContract.contract_address, _ACCOUNT2, CheatSpan::TargetCalls(1));
+    ETHContract.approve(NFTMint.contract_address,1000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT2, CheatSpan::TargetCalls(1));
+    NFTMint.mint(_ACCOUNT2, 1, ETHContract.contract_address);
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT2) == 1,
+        'Error:: ac1 tokens len'
+    );
+
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT2, 0) == WHITELIST_FREE_MINT_END+3, 'Error:: tokens index1');
+
+    assert(ETHContract.balance_of(_ACCOUNT2) == 999 *MINTING_FEE , 'Error:: balanceOf ac1');
+    assert(ETHContract.balance_of(_OWNER) == owner_balance+3 *MINTING_FEE , 'Error:: balanceOf owner1');
+
+    let _ACCOUNT4: ContractAddress = contract_address_const::<'account4'>();
+    'deploy'.print();
+    let STRKContract = deploy_token(_ACCOUNT3,  contract_address_const::<'strk'>());
+    let LORDSContract = deploy_token(_ACCOUNT4,  contract_address_const::<'lords'>());
+
+    let strk_fee= 10000000000000000000;
+    let lords_fee= 50000000000000000000;
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+
+    NFTMint.set_payment_tokens( STRKContract.contract_address, strk_fee);
+    NFTMint.set_payment_tokens( LORDSContract.contract_address, lords_fee);
+    'set_payment_tokens'.print();
+
+    assert(NFTMint.mint_fee( STRKContract.contract_address) == strk_fee, 'Error:: mint_fee');
+    assert(NFTMint.mint_fee( LORDSContract.contract_address) ==lords_fee , 'Error:: mint_fee2');
+
+    cheat_caller_address(STRKContract.contract_address, _ACCOUNT3, CheatSpan::TargetCalls(1));
+    STRKContract.approve(NFTMint.contract_address,100000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT3, CheatSpan::TargetCalls(1));
+    NFTMint.mint(_ACCOUNT3, 2, STRKContract.contract_address);
+    'mint'.print();
+
+    assert(STRKContract.balance_of(_OWNER) == 2 *strk_fee , 'Error:: balanceOf owner2');
+
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+4) == _ACCOUNT3, 'Error:: token owner');
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+5) == _ACCOUNT3, 'Error:: token owner');
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT3) == 2,
+        'Error:: ac3 tokens len'
+    );
+
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT3, 0) == WHITELIST_FREE_MINT_END+4, 'Error:: tokens index1');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT3, 1) == WHITELIST_FREE_MINT_END+5, 'Error:: tokens index2');
+
+
+    cheat_caller_address(LORDSContract.contract_address, _ACCOUNT4, CheatSpan::TargetCalls(1));
+    LORDSContract.approve(NFTMint.contract_address,100000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT4, CheatSpan::TargetCalls(1));
+    NFTMint.mint(_ACCOUNT4, 2, LORDSContract.contract_address);
+
+    assert(LORDSContract.balance_of(_OWNER) == 2 *lords_fee , 'Error:: balanceOf owner3');
+
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+6) == _ACCOUNT4, 'Error:: token owner');
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+7) == _ACCOUNT4, 'Error:: token owner');
 }
-
-
 
 
 #[test]
@@ -387,8 +451,6 @@ fn test_not_owner_then_panics() {
 }
 
 
-
-
 #[test]
 #[should_panic(expected: ('Public sale has not started',))]
 fn test_sale_not_started_then_panics() {
@@ -417,6 +479,41 @@ fn test_sale_not_started_then_panics() {
 
 
 
+#[test]
+#[should_panic(expected: ('Invalid fee token',))]
+fn test_invalid_sale_token_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+    let NFTMintErc721 = ERC721ABIDispatcher { contract_address: NFTMint.contract_address };
+
+    cheat_caller_address(ETHContract.contract_address, _OWNER, CheatSpan::TargetCalls(3));
+    ETHContract.transfer(_ACCOUNT1,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT2,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT3,1000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.set_free_mint( true);
+    NFTMint.set_public_sale_open( true);
+
+
+    let mut i=1_u32;
+    while i < 101 {
+
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+        NFTMint.add_whitelist_addresses( array![contract_address_try_from_felt252(i.into()).unwrap()]); 
+        NFTMint.mint( contract_address_try_from_felt252(i.into()).unwrap(), 1, ETHContract.contract_address);
+        i+=1;
+    };
+
+    let STRKContract = deploy_token(_ACCOUNT3,  contract_address_const::<'strk'>());
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    NFTMint.mint(_ACCOUNT1, 2, STRKContract.contract_address);
+
+}
+
 //
 
 fn deploy_accounts() -> (ContractAddress, ContractAddress, ContractAddress, ContractAddress) {
@@ -436,7 +533,7 @@ fn deploy(admin: ContractAddress) -> INFTMintDispatcher {
     INFTMintDispatcher { contract_address: contract_address }
 }
 
-fn deploy_token(recipient: ContractAddress, contractAdd: ContractAddress) -> IERC20Dispatcher {
+fn deploy_token(recipient: ContractAddress, contractAdd: ContractAddress) -> ERC20ABIDispatcher {
     let mut calldata = ArrayTrait::new();
 
     calldata.append(1000000000000000000);
@@ -444,6 +541,6 @@ fn deploy_token(recipient: ContractAddress, contractAdd: ContractAddress) -> IER
     calldata.append(recipient.into());
     let contract = declare("ERC20Mock").unwrap();
     let (contract_address, _) = contract.deploy_at(@calldata, contractAdd).unwrap();
-    IERC20Dispatcher { contract_address: contract_address }
+    ERC20ABIDispatcher { contract_address: contract_address }
 }
 

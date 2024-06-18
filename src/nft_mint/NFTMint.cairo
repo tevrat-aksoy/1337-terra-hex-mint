@@ -9,7 +9,7 @@ mod NFTMint {
     use openzeppelin::token::erc721::{ERC721Component, interface};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::access::ownable::OwnableComponent;
-    use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use terracon_prestige_card::errors::Errors;
     use terracon_prestige_card::nft_mint::interface::{
         INFTMint, MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
@@ -525,9 +525,9 @@ mod NFTMint {
                     let mint_fee = self.payment_tokens.read(fee_token);
 
                     assert(mint_fee != 0, Errors::INVALID_FEE_TOKEN);
-                    let token_dispatcher = IERC20Dispatcher { contract_address: fee_token };
+                    let token_dispatcher = ERC20ABIDispatcher { contract_address: fee_token };
                     let success = token_dispatcher
-                        .transfer_from(get_caller_address(), self.ownable.owner(), mint_fee);
+                        .transferFrom(get_caller_address(), self.ownable.owner(), mint_fee);
                     assert(success, Errors::TRANSFER_FAILED);
 
                     self._add_token_to(recipient, token_id);

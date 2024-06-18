@@ -116,6 +116,151 @@ fn test_erc721() {
     assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 2) == 0, 'Error:: tokens index11');
 }
 
+#[test]
+fn test_whitelist_functions() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_whitelist_addresses( array![_OWNER, _ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+
+
+    assert(NFTMint.is_whitelisted(_ACCOUNT1) == true, 'Error:: is_whitelisted');
+    assert(NFTMint.is_whitelisted(_ACCOUNT2) == true, 'Error:: is_whitelisted2');
+    assert(NFTMint.is_whitelisted(_ACCOUNT3) == true, 'Error:: is_whitelisted3');
+
+    assert(NFTMint.all_whitelist_addresses() == array![_OWNER,_ACCOUNT1,_ACCOUNT2,_ACCOUNT3], 'Error:: all_whitelist_addresses');
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.remove_whitelist_addresses( array![ _ACCOUNT1,_ACCOUNT3]);
+
+    assert(NFTMint.is_whitelisted(_ACCOUNT1) == false, 'Error:: is_whitelisted');
+    assert(NFTMint.is_whitelisted(_ACCOUNT2) == true, 'Error:: is_whitelisted2');
+    assert(NFTMint.is_whitelisted(_ACCOUNT3) == false, 'Error:: is_whitelisted3'); 
+
+    assert(NFTMint.all_whitelist_addresses() == array![_OWNER,_ACCOUNT2], 'Error:: whitelist_addresses2');
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT3]);
+
+    assert(NFTMint.is_whitelisted(_ACCOUNT1) == true, 'Error:: is_whitelisted');
+    assert(NFTMint.is_whitelisted(_ACCOUNT2) == true, 'Error:: is_whitelisted2');
+    assert(NFTMint.is_whitelisted(_ACCOUNT3) == true, 'Error:: is_whitelisted3');
+    assert(NFTMint.all_whitelist_addresses() == array![_OWNER,_ACCOUNT2,_ACCOUNT1,_ACCOUNT3], 'Error:: whitelist_addresses3');
+}
+
+#[test]
+fn test_authorize_functions() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_authorized_address( _ACCOUNT1);
+
+    assert(NFTMint.is_authorized(_ACCOUNT1) == true, 'Error:: is_authorized');
+    assert(NFTMint.is_authorized(_ACCOUNT2) == false, 'Error:: is_authorized');
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.remove_authorized_address( _ACCOUNT1);
+    assert(NFTMint.is_authorized(_ACCOUNT1) == false, 'Error:: is_authorized');
+}
+
+#[test]
+fn test_whitelist_mint() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+    let NFTMintErc721 = ERC721ABIDispatcher { contract_address: NFTMint.contract_address };
+
+    cheat_caller_address(ETHContract.contract_address, _OWNER, CheatSpan::TargetCalls(3));
+    ETHContract.transfer(_ACCOUNT1,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT2,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT3,1000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    NFTMint.set_free_mint( true);
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(3));
+    NFTMint.mint( _ACCOUNT1, 1, ETHContract.contract_address);
+
+    assert(NFTMintErc721.owner_of(OWNER_FREE_MINT_AMOUNT+1) == _ACCOUNT1, 'Error:: token owner');
+    assert(NFTMint.is_whitelisted(_ACCOUNT1) == false, 'Error:: is_whitelisted');
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT1) == 1,
+        'Error:: ac1 tokens len'
+    );
+
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 0) == OWNER_FREE_MINT_AMOUNT+1, 'Error:: tokens index1');
+
+    NFTMint.mint( _ACCOUNT2, 1, ETHContract.contract_address);
+    NFTMint.mint( _ACCOUNT3, 1, ETHContract.contract_address);
+    assert(NFTMint.is_whitelisted(_ACCOUNT2) == false, 'Error:: is_whitelisted');
+    assert(NFTMint.is_whitelisted(_ACCOUNT3) == false, 'Error:: is_whitelisted');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT2, 0) == OWNER_FREE_MINT_AMOUNT+2, 'Error:: tokens index2');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT3, 0) == OWNER_FREE_MINT_AMOUNT+3, 'Error:: tokens index3');
+    assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 4, 'Error:: total sup');
+}
+
+
+
+
+
+#[test]
+fn test_sale() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+    let NFTMintErc721 = ERC721ABIDispatcher { contract_address: NFTMint.contract_address };
+
+    cheat_caller_address(ETHContract.contract_address, _OWNER, CheatSpan::TargetCalls(3));
+    ETHContract.transfer(_ACCOUNT1,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT2,1000 *MINTING_FEE );
+    ETHContract.transfer(_ACCOUNT3,1000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.set_free_mint( true);
+    NFTMint.set_public_sale_open( true);
+
+
+    let mut i=1_u32;
+    while i < 101 {
+
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+        NFTMint.add_whitelist_addresses( array![contract_address_try_from_felt252(i.into()).unwrap()]); 
+        NFTMint.mint( contract_address_try_from_felt252(i.into()).unwrap(), 1, ETHContract.contract_address);
+        i+=1;
+    };
+
+    'total'.print();
+    NFTMint.total_supply().print();
+
+    cheat_caller_address(ETHContract.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    ETHContract.approve(NFTMint.contract_address,1000 *MINTING_FEE );
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    NFTMint.mint(_ACCOUNT1, 2, ETHContract.contract_address);
+
+
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+1) == _ACCOUNT1, 'Error:: token owner');
+    assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END+2) == _ACCOUNT1, 'Error:: token owner');
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT1) == 2,
+        'Error:: ac1 tokens len'
+    );
+
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 0) == WHITELIST_FREE_MINT_END+1, 'Error:: tokens index1');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 1) == WHITELIST_FREE_MINT_END+2, 'Error:: tokens index2');
+
+}
+
+
 
 
 #[test]
@@ -167,6 +312,110 @@ fn test_reveal() {
     assert(NFTMint.is_revealed(token_id1),'Error:: is revealed');
 }
 
+#[test]
+#[should_panic(expected: ('Free mint has not started',))]
+fn test_whitelist_mint_not_started_then_panices() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(3));
+    NFTMint.mint( _ACCOUNT1, 1, ETHContract.contract_address);
+}
+
+
+#[test]
+#[should_panic(expected: ('Whitelisted mint only',))]
+fn test_multi_mint_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    NFTMint.set_free_mint( true);
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(3));
+    NFTMint.mint( _ACCOUNT1, 1, ETHContract.contract_address);
+    NFTMint.mint( _ACCOUNT1, 1, ETHContract.contract_address);
+}
+
+
+#[test]
+#[should_panic(expected: ('Maximum NFT per address reached',))]
+fn test_max_mint_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    NFTMint.set_free_mint( true);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(3));
+    NFTMint.mint( _OWNER, 1, ETHContract.contract_address);
+}
+
+
+
+#[test]
+#[should_panic(expected: ('Address already whitelisted',))]
+fn test_already_whitelisted_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_OWNER, _ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    NFTMint.add_whitelist_addresses( array![_OWNER,]);
+}
+
+#[test]
+#[should_panic(expected: ('Caller is not the owner',))]
+fn test_not_owner_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let NFTMint = deploy(_OWNER);
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    NFTMint.add_whitelist_addresses( array![_OWNER, _ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+}
+
+
+
+
+#[test]
+#[should_panic(expected: ('Public sale has not started',))]
+fn test_sale_not_started_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.add_whitelist_addresses( array![_ACCOUNT1,_ACCOUNT2,_ACCOUNT3]);
+    NFTMint.set_free_mint( true);
+
+
+    let mut i=1_u32;
+    while i < 102 {
+
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+        NFTMint.add_whitelist_addresses( array![contract_address_try_from_felt252(i.into()).unwrap()]); 
+
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+        NFTMint.mint( contract_address_try_from_felt252(i.into()).unwrap(), 1, ETHContract.contract_address);
+        i+=1;
+    };
+}
+
+
 
 //
 
@@ -191,13 +440,10 @@ fn deploy_token(recipient: ContractAddress, contractAdd: ContractAddress) -> IER
     let mut calldata = ArrayTrait::new();
 
     calldata.append(1000000000000000000);
-    calldata.append(0);
+    calldata.append(1111);
     calldata.append(recipient.into());
-
     let contract = declare("ERC20Mock").unwrap();
-
     let (contract_address, _) = contract.deploy_at(@calldata, contractAdd).unwrap();
-
     IERC20Dispatcher { contract_address: contract_address }
 }
 

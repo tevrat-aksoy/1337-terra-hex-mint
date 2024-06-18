@@ -508,7 +508,6 @@ mod NFTMint {
             while minted_quantity < quantity {
                 if token_id <= WHITELIST_FREE_MINT_END {
                     assert(self.free_mint_open.read(), Errors::FREE_MINT_NOT_STARTED);
-                    // TODO: Check if the recipient is in the whitelist using the Merkle proof
                     /// @dev Check if the recipient is whitelisted
                     let whitelisted = self.is_whitelisted.read(recipient);
 
@@ -658,6 +657,7 @@ mod NFTMint {
             let mut i = 0;
             while (i < address_list.len()) {
                 whitelist_len = self._remove_whitelist(*address_list[i], whitelist_len);
+                i+=1;
             };
             self.whitelisted_address_len.write(whitelist_len);
         }

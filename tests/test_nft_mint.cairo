@@ -56,6 +56,67 @@ fn test_init() {
     );
 }
 
+#[test]
+fn test_erc721() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let NFTMint = deploy(_OWNER);
+    let NFTMintErc721 = ERC721ABIDispatcher { contract_address: NFTMint.contract_address };
+
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(4));
+    NFTMintErc721.transfer_from(_OWNER, _ACCOUNT1, 1);
+    NFTMintErc721.transfer_from(_OWNER, _ACCOUNT1, 2);
+    NFTMintErc721.transfer_from(_OWNER, _ACCOUNT1, 3);
+    NFTMintErc721.transfer_from(_OWNER, _ACCOUNT2, 4);
+
+    assert(NFTMintErc721.balance_of(_OWNER) == OWNER_FREE_MINT_AMOUNT-4, 'Error:: owner balance');
+    assert(NFTMintErc721.balance_of(_ACCOUNT1) == 3, 'Error:: ac1 balance');
+    assert(NFTMintErc721.balance_of(_ACCOUNT2) == 1, 'Error:: ac2 balance');
+
+    assert(NFTMintErc721.owner_of(1) == _ACCOUNT1, 'Error:: token1 owner');
+    assert(NFTMintErc721.ownerOf(1) == _ACCOUNT1, 'Error:: token1  owner');
+    assert(NFTMintErc721.ownerOf(4) == _ACCOUNT2, 'Error:: token4  owner');
+
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_OWNER) == OWNER_FREE_MINT_AMOUNT-4,
+        'Error:: owner tokens len'
+    );
+
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT1) == 3,
+        'Error:: ac1 tokens len'
+    );
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT2) == 1,
+        'Error:: ac2 tokens len'
+    );
+
+
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 0) == 1, 'Error:: tokens index1');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1,1) == 2, 'Error:: tokens index2');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 2) == 3, 'Error:: tokens index3');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT2, 0) == 4, 'Error:: tokens index4');
+
+    assert(NFTMint.token_of_owner_by_index(_OWNER, 0) == OWNER_FREE_MINT_AMOUNT, 'Error:: tokens index5');
+    assert(NFTMint.token_of_owner_by_index(_OWNER, 1) == OWNER_FREE_MINT_AMOUNT-1, 'Error:: tokens index6');
+    assert(NFTMint.token_of_owner_by_index(_OWNER, 2) == OWNER_FREE_MINT_AMOUNT-2, 'Error:: tokens index7');
+    assert(NFTMint.token_of_owner_by_index(_OWNER, 3) == OWNER_FREE_MINT_AMOUNT-3, 'Error:: tokens index8');
+    assert(NFTMint.token_of_owner_by_index(_OWNER, 4) == 5, 'Error:: tokens index9');
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    NFTMintErc721.transfer_from(_ACCOUNT1, _ACCOUNT3, 3); 
+    assert(
+        NFTMint.token_of_owner_by_index_len(_ACCOUNT1) == 2,
+        'Error:: ac1 tokens len'
+    );
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 0) == 1, 'Error:: tokens index9');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1,1) == 2, 'Error:: tokens index10');
+    assert(NFTMint.token_of_owner_by_index(_ACCOUNT1, 2) == 0, 'Error:: tokens index11');
+}
+
+
 
 #[test]
 fn test_reveal() {

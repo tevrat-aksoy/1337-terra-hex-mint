@@ -16,6 +16,5 @@ pub mod Errors {
     const TRANSFER_FAILED: felt252 = 'Transfer failed';
     const INVALID_PROOF: felt252 = 'Invalid proof';
     const INVALID_STAT_PROOF: felt252 = 'Invalid stat proof';
-
 }
 

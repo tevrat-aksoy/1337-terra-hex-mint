@@ -18,7 +18,7 @@ mod ERC20Mock {
 
     #[abi(embed_v0)]
     impl ERC20CamelOnlyImpl = ERC20Component::ERC20CamelOnlyImpl<ContractState>;
-    
+
     impl InternalImpl = ERC20Component::InternalImpl<ContractState>;
 
     #[storage]

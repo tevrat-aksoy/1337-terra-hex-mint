@@ -42,7 +42,7 @@ mod NFTMint {
         public_sale_open: bool,
         free_mint_open: bool,
         merkle_root: felt252,
-        stats_merkle_root:felt252,
+        stats_merkle_root: felt252,
         next_token_id: u256,
         whitelisted_address: LegacyMap::<u32, ContractAddress>,
         whitelisted_address_len: u32,
@@ -54,7 +54,7 @@ mod NFTMint {
         token_attributes: LegacyMap<(u256, u32), Attribute>,
         token_attributes_len: LegacyMap<u256, u32>,
         token_stats: LegacyMap<(u256, u32), Stat>,
-        token_stats_len: LegacyMap<u256, u32>,    
+        token_stats_len: LegacyMap<u256, u32>,
         is_revealed: LegacyMap<u256, bool>,
         is_stat_revealed: LegacyMap<u256, bool>,
         authorized_addresses: LegacyMap<ContractAddress, bool>,
@@ -387,12 +387,8 @@ mod NFTMint {
         }
 
         fn get_stat_root_for(
-            self: @ContractState,
-            tokenId: u128,
-            mut stats: Span::<Stat>,
-            proof: Span::<felt252>
+            self: @ContractState, tokenId: u128, mut stats: Span::<Stat>, proof: Span::<felt252>
         ) -> felt252 {
-
             let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeTrait::new();
             let mut data = ArrayTrait::<felt252>::new();
 
@@ -463,7 +459,7 @@ mod NFTMint {
                     )
                 );
         }
-    
+
         fn update_token_stats(
             ref self: ContractState, token_id: u256, mut new_stats: Span::<Stat>,
         ) {
@@ -486,7 +482,7 @@ mod NFTMint {
                         UpdateTokenStats { token_id: token_id, stats: new_stats }
                     )
                 );
-        }    
+        }
 
         fn mint(
             ref self: ContractState,
@@ -593,7 +589,6 @@ mod NFTMint {
         ) {
             assert(!self.is_stat_revealed.read(token_id), Errors::TOKEN_ALREADY_REVALED);
 
-
             let root = self.get_stat_root_for(token_id.low, stats, proofs);
             assert(root == self.stats_merkle_root.read(), Errors::INVALID_STAT_PROOF);
             let stats_len = stats.len();
@@ -611,7 +606,7 @@ mod NFTMint {
             self.token_stats_len.write(token_id, stats_len);
             self.is_revealed.write(token_id, true);
         }
-        
+
 
         fn set_public_sale_open(ref self: ContractState, public_sale_open: bool) {
             self.ownable.assert_only_owner();
@@ -657,7 +652,7 @@ mod NFTMint {
             let mut i = 0;
             while (i < address_list.len()) {
                 whitelist_len = self._remove_whitelist(*address_list[i], whitelist_len);
-                i+=1;
+                i += 1;
             };
             self.whitelisted_address_len.write(whitelist_len);
         }

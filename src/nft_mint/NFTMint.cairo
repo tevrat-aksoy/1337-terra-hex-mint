@@ -552,16 +552,16 @@ mod NFTMint {
             let root = self.get_root_for(name, token_id.low, attributes, proofs);
             assert(root == self.merkle_root.read(), Errors::INVALID_PROOF);
 
-            let mut nameByte= format!("");
-            let name_len=find_word_length(name);
-            nameByte.append_word(name,name_len);
+            let mut nameByte = format!("");
+            let name_len = find_word_length(name);
+            nameByte.append_word(name, name_len);
 
-            let mut description= format!("");
-            description.append_word(name,name_len);
+            let mut description = format!("");
+            description.append_word(name, name_len);
             description.append(@format!(" is a character from Terracon Quest Autonomous World."));
 
-            let mut url= format!("https://terracon.quest/");
-            url.append_word(name,name_len);
+            let mut url = format!("https://terracon.quest/");
+            url.append_word(name, name_len);
 
             let metadata = TokenMetadata {
                 name: nameByte,
@@ -666,13 +666,8 @@ mod NFTMint {
             };
             self.whitelisted_address_len.write(whitelist_len);
         }
-
-
-
     }
 
-
-    
 
     /// @dev Internal Functions implementation for the NFT Mint contract
     #[generate_trait]

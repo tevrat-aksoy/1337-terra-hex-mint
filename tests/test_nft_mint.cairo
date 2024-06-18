@@ -359,6 +359,61 @@ fn test_sale() {
 
     assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END + 6) == _ACCOUNT4, 'Error:: token owner');
     assert(NFTMintErc721.owner_of(WHITELIST_FREE_MINT_END + 7) == _ACCOUNT4, 'Error:: token owner');
+    assert(NFTMintErc721.owner_of(444) == _ACCOUNT4, 'Error:: token owner444');
+
+    //444
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_merkle_root(MERKLE_ROOT);
+
+    let token_id444: u256 = 444;
+    let name1 = 'Pythagorasus';
+    let mut attributes1 = ArrayTrait::<Attribute>::new();
+    attributes1.append(Attribute { trait_type: 'birthplace', value: 'Peloponnese' });
+    attributes1.append(Attribute { trait_type: 'ethnicity', value: 'Spartans' });
+    attributes1.append(Attribute { trait_type: 'occupation', value: 'General' });
+    attributes1.append(Attribute { trait_type: 'special_trait', value: 'None' });
+
+    let proof1 = array![
+        0xd52c4b5bd686651a20a8eeb5a42e6067928d4d8b3ec1337f73848f5c814d1f,
+        0x44e553fc99c78d4e035eaa3c5022a1fdaa2ae8d5b8b79ff6f3fa8fe851330e5,
+        0x85a44dd349ca16ad60462a502593a4240f93ebefb019ad782354f05f736aa3,
+        0x67fc8e9a49662ddb1cad1748c895e9f3091f29391c1eefefef923bebc35cd3b,
+        0x5b769c40d6f1c3c97f6e5fe53bc6b320e8e28530a9ac8efe872f6c53a9d4b58,
+        0x8dd9d582db056df84fefd7a637455e8a915930f36e98a1f63f6e9abd696058,
+        0x113dea37be1e25b88e3733ae227f53f6ec11c670efa3f801e07c040d28d52e9,
+        0x759cdc2e4ebc5f25150eb4efcd08ec4e3ee82ca84b9c7221a091f1cc636b746,
+        0x56a6ac661ad66aa90ef6aa53c91ea52fe75d696fb8ad7094a926d4696baf930,
+        0x1f38f47ab224ef905f3cbf88b39109b7aa8c0d78b2d773a45cf6acd82f6f003,
+        0x78a063a051eea17b6e114091ff6a1c97813412155073b1a55e3419f52402952
+    ];
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT4, CheatSpan::TargetCalls(1));
+    NFTMint.reveal_token(token_id444, name1, attributes1.span(), proof1.span());
+
+    assert(NFTMint.is_revealed(token_id444), 'Error:: is revealed');
+    let metadata1 = NFTMint.get_token_metadata(token_id444);
+
+    assert(metadata1.name == format!("Pythagorasus"), 'Error:: name');
+
+    assert(
+        metadata1
+            .description == format!(
+                "Pythagorasus is a character from Terracon Quest Autonomous World."
+            ),
+        'Error:: description'
+    );
+
+    assert(
+        metadata1
+            .image == format!(
+                "https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/444.png"
+            ),
+        'Error:: image'
+    );
+    assert(
+        metadata1.external_url == format!("https://terracon.quest/Pythagorasus"),
+        'Error:: external_url'
+    );
 }
 
 
@@ -419,9 +474,17 @@ fn test_reveal() {
         'Error:: description'
     );
 
-    assert(metadata1.image == format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/1.png"), 'Error:: image');
-    assert(metadata1.external_url == format!("https://terracon.quest/Theseusides"), 'Error:: external_url');
-
+    assert(
+        metadata1
+            .image == format!(
+                "https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/1.png"
+            ),
+        'Error:: image'
+    );
+    assert(
+        metadata1.external_url == format!("https://terracon.quest/Theseusides"),
+        'Error:: external_url'
+    );
 }
 
 

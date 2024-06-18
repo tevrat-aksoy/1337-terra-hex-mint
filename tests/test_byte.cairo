@@ -32,26 +32,28 @@ fn test_reveal() {
 
     format!("").pending_word.print();
     format!("Theseusides").pending_word.print();
-    
+
     format!("{}", name1).pending_word.print();
-     
-    let mut name= format!("");
-    name.append_word(name1,11);
+
+    let mut name = format!("");
+    name.append_word(name1, 11);
     name.pending_word.print();
 
-    let mut description= format!("");
-    description.append_word(name1,11);
+    let mut description = format!("");
+    description.append_word(name1, 11);
     description.append(@format!(" is a character from Terracon Quest Autonomous World."));
 
     assert(name == format!("Theseusides"), 'Error:: name');
-    assert(description == format!("Theseusides is a character from Terracon Quest Autonomous World."), 'Error:: 1111name');
-    let token=121234;
+    assert(
+        description == format!("Theseusides is a character from Terracon Quest Autonomous World."),
+        'Error:: 1111name'
+    );
+    let token = 121234;
     assert(format!("Theseusides {}.", token) == format!("Theseusides 121234."), 'Error:: 1111name');
 
-    let mut url= format!("https://terracon.quest/");
-    url.append_word(name1,11);
+    let mut url = format!("https://terracon.quest/");
+    url.append_word(name1, 11);
 
-    assert( url== format!("https://terracon.quest/Theseusides"), 'Error:: 12');
-
+    assert(url == format!("https://terracon.quest/Theseusides"), 'Error:: 12');
 }
 

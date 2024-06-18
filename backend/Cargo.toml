@@ -22,3 +22,5 @@ utoipa = { version = "4.2.0", features = ["chrono", "actix_extras"] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["actix-web"] }
 
 hex = "0.4"  # Add this line
+dotenv = "0.15"
+csv = "1.1.6"

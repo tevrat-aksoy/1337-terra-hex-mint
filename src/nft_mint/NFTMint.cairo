@@ -1,5 +1,6 @@
 #[starknet::contract]
 mod NFTMint {
+    use core::traits::Into;
     use core::option::OptionTrait;
     use core::array::SpanTrait;
     use openzeppelin::token::erc721::interface::IERC721;
@@ -14,6 +15,7 @@ mod NFTMint {
         INFTMint, MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
         WHITELIST_FREE_MINT_END
     };
+    use core::integer::u128_to_felt252;
 
     use core::hash::{LegacyHash, HashStateTrait};
     use alexandria_merkle_tree::merkle_tree::{
@@ -21,7 +23,7 @@ mod NFTMint {
     };
     use core::poseidon::{poseidon_hash_span, hades_permutation};
 
-    use terracon_prestige_card::types::{TokenMetadata, Attribute};
+    use terracon_prestige_card::types::{TokenMetadata, Attribute, Stat};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -40,6 +42,7 @@ mod NFTMint {
         public_sale_open: bool,
         free_mint_open: bool,
         merkle_root: felt252,
+        stats_merkle_root:felt252,
         next_token_id: u256,
         whitelisted_address: LegacyMap::<u32, ContractAddress>,
         whitelisted_address_len: u32,
@@ -50,7 +53,10 @@ mod NFTMint {
         token_metadata: LegacyMap<u256, TokenMetadata>,
         token_attributes: LegacyMap<(u256, u32), Attribute>,
         token_attributes_len: LegacyMap<u256, u32>,
+        token_stats: LegacyMap<(u256, u32), Stat>,
+        token_stats_len: LegacyMap<u256, u32>,    
         is_revealed: LegacyMap<u256, bool>,
+        is_stat_revealed: LegacyMap<u256, bool>,
         authorized_addresses: LegacyMap<ContractAddress, bool>,
         payment_tokens: LegacyMap<ContractAddress, u256>,
         #[substorage(v0)]
@@ -70,6 +76,7 @@ mod NFTMint {
         AddAuthAddress: AddAuthAddress,
         RemoveAuthAddress: RemoveAuthAddress,
         UpdateTokenAtributes: UpdateTokenAtributes,
+        UpdateTokenStats: UpdateTokenStats,
         WhitelistAddress: WhitelistAddress,
         #[flat]
         ERC721Event: ERC721Component::Event,
@@ -109,6 +116,12 @@ mod NFTMint {
     struct UpdateTokenAtributes {
         token_id: u256,
         attributes: Span::<Attribute>
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct UpdateTokenStats {
+        token_id: u256,
+        stats: Span::<Stat>
     }
 
     #[derive(Drop, starknet::Event)]
@@ -311,6 +324,10 @@ mod NFTMint {
             self.is_revealed.read(token_id,)
         }
 
+        fn is_stats_revealed(self: @ContractState, token_id: u256,) -> bool {
+            self.is_stat_revealed.read(token_id,)
+        }
+
         fn is_authorized(self: @ContractState, address: ContractAddress) -> bool {
             self.authorized_addresses.read(address)
         }
@@ -369,10 +386,40 @@ mod NFTMint {
             merkle_tree.compute_root(leaf, proof)
         }
 
+        fn get_stat_root_for(
+            self: @ContractState,
+            tokenId: u128,
+            mut stats: Span::<Stat>,
+            proof: Span::<felt252>
+        ) -> felt252 {
+
+            let mut merkle_tree: MerkleTree<Hasher> = MerkleTreeTrait::new();
+            let mut data = ArrayTrait::<felt252>::new();
+
+            data.append(tokenId.into());
+            loop {
+                match stats.pop_front() {
+                    Option::Some(stat) => {
+                        data.append(*stat.stat_type);
+                        data.append(u128_to_felt252(*stat.value.low));
+                    },
+                    Option::None => { break; }
+                };
+            };
+
+            let leaf = poseidon_hash_span(data.span());
+            merkle_tree.compute_root(leaf, proof)
+        }
+
+
         fn get_merkle_root(ref self: ContractState,) -> felt252 {
             self.merkle_root.read()
         }
 
+
+        fn get_stat_merke_root(ref self: ContractState,) -> felt252 {
+            self.stats_merkle_root.read()
+        }
 
         fn add_authorized_address(ref self: ContractState, address: ContractAddress) {
             self.ownable.assert_only_owner();
@@ -416,6 +463,30 @@ mod NFTMint {
                     )
                 );
         }
+    
+        fn update_token_stats(
+            ref self: ContractState, token_id: u256, mut new_stats: Span::<Stat>,
+        ) {
+            assert(self.is_authorized(get_caller_address()), Errors::NOT_AUTHORIZED);
+            let stats_len = new_stats.len();
+            let mut index = 0;
+            loop {
+                match new_stats.pop_front() {
+                    Option::Some(stat) => {
+                        self.token_stats.write((token_id, index), *stat);
+                        index = index + 1;
+                    },
+                    Option::None => { break; }
+                };
+            };
+            self.token_stats_len.write(token_id, stats_len);
+            self
+                .emit(
+                    Event::UpdateTokenStats(
+                        UpdateTokenStats { token_id: token_id, stats: new_stats }
+                    )
+                );
+        }    
 
         fn mint(
             ref self: ContractState,
@@ -481,10 +552,6 @@ mod NFTMint {
             let owner = self.erc721.owner_of(token_id);
             let caller = get_caller_address();
             assert(owner == caller, ERC721Component::Errors::UNAUTHORIZED);
-            // TODO  check input
-
-            let attributes_len = attributes.len();
-            let mut index = 0;
 
             let root = self.get_root_for(name, token_id.low, attributes, proofs);
             assert(root == self.merkle_root.read(), Errors::INVALID_PROOF);
@@ -503,6 +570,9 @@ mod NFTMint {
 
             self.token_metadata.write(token_id, metadata);
 
+            let attributes_len = attributes.len();
+            let mut index = 0;
+
             loop {
                 match attributes.pop_front() {
                     Option::Some(attribute) => {
@@ -516,6 +586,33 @@ mod NFTMint {
             self.is_revealed.write(token_id, true);
         }
 
+        fn reveal_stats(
+            ref self: ContractState,
+            token_id: u256,
+            mut stats: Span::<Stat>,
+            proofs: Span::<felt252>
+        ) {
+            assert(!self.is_stat_revealed.read(token_id), Errors::TOKEN_ALREADY_REVALED);
+
+
+            let root = self.get_stat_root_for(token_id.low, stats, proofs);
+            assert(root == self.stats_merkle_root.read(), Errors::INVALID_STAT_PROOF);
+            let stats_len = stats.len();
+            let mut index = 0;
+
+            loop {
+                match stats.pop_front() {
+                    Option::Some(stat) => {
+                        self.token_stats.write((token_id, index), *stat);
+                        index = index + 1;
+                    },
+                    Option::None => { break; }
+                };
+            };
+            self.token_stats_len.write(token_id, stats_len);
+            self.is_revealed.write(token_id, true);
+        }
+        
 
         fn set_public_sale_open(ref self: ContractState, public_sale_open: bool) {
             self.ownable.assert_only_owner();
@@ -540,6 +637,11 @@ mod NFTMint {
         fn set_merkle_root(ref self: ContractState, root: felt252) {
             self.ownable.assert_only_owner();
             self.merkle_root.write(root);
+        }
+
+        fn set_stat_merkle_root(ref self: ContractState, root: felt252) {
+            self.ownable.assert_only_owner();
+            self.stats_merkle_root.write(root);
         }
 
         fn add_whitelist_addresses(ref self: ContractState, address_list: Array<ContractAddress>) {

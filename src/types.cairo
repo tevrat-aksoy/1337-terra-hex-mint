@@ -11,3 +11,9 @@ struct TokenMetadata {
     image: ByteArray,
     external_url: ByteArray,
 }
+
+#[derive(Drop, Serde, starknet::Store, Copy)]
+struct Stat {
+    stat_type: felt252,
+    value: u256,
+}

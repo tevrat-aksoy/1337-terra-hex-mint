@@ -23,7 +23,7 @@ const WHITELIST_FREE_MINT_END: u256 = 437; // 437
 
 const ETH_ADDRESS: felt252 = 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7;
 
-const MERKLE_ROOT: felt252 = 0x6e1ca6734406be8b8390672e63de35b020172fb415d4f5e6ed604c628c3802b;
+const MERKLE_ROOT: felt252 = 0x06e1ca6734406be8b8390672e63de35b020172fb415d4f5e6ed604c628c3802b;
 
 #[test]
 fn test_init() {
@@ -100,8 +100,10 @@ fn test_reveal() {
             .get_root_for(name1, token_id1.low, attributes1.span(), proof1.span()) == MERKLE_ROOT,
         'Error:: token1 data'
     );
-//cheat_caller_address(NFTMint.contract_address, _OWNER ,CheatSpan::TargetCalls(1));
-//NFTMint.reveal(1,token_id1,name1);
+    cheat_caller_address(NFTMint.contract_address, _OWNER ,CheatSpan::TargetCalls(1));
+    NFTMint.reveal_token(token_id1,name1, attributes1.span(),proof1.span() );
+
+    assert(NFTMint.is_revealed(token_id1),'Error:: is revealed');
 }
 
 

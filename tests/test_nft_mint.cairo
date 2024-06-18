@@ -409,7 +409,6 @@ fn test_reveal() {
 
     let metadata1 = NFTMint.get_token_metadata(token_id1);
 
-    //assert(metadata1.name==  format!("{}", name1),'Error:: name');
     assert(metadata1.name == format!("Theseusides"), 'Error:: name');
 
     assert(
@@ -419,6 +418,10 @@ fn test_reveal() {
             ),
         'Error:: description'
     );
+
+    assert(metadata1.image == format!("https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/1.png"), 'Error:: image');
+    assert(metadata1.external_url == format!("https://terracon.quest/Theseusides"), 'Error:: external_url');
+
 }
 
 

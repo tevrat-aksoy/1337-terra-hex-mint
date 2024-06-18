@@ -24,6 +24,7 @@ mod NFTMint {
     use core::poseidon::{poseidon_hash_span, hades_permutation};
 
     use terracon_prestige_card::types::{TokenMetadata, Attribute, Stat};
+    use terracon_prestige_card::utils::{find_word_length};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -551,16 +552,25 @@ mod NFTMint {
             let root = self.get_root_for(name, token_id.low, attributes, proofs);
             assert(root == self.merkle_root.read(), Errors::INVALID_PROOF);
 
+            let mut nameByte= format!("");
+            let name_len=find_word_length(name);
+            nameByte.append_word(name,name_len);
+
+            let mut description= format!("");
+            description.append_word(name,name_len);
+            description.append(@format!(" is a character from Terracon Quest Autonomous World."));
+
+            let mut url= format!("https://terracon.quest/");
+            url.append_word(name,name_len);
+
             let metadata = TokenMetadata {
-                name: format!("{}", name),
-                description: format!(
-                    "{} is a character from Terracon Quest Autonomous World.", name
-                ),
+                name: nameByte,
+                description: description,
                 image: format!(
                     "https://terraconquest.mypinata.cloud/ipfs/QmUysuKZyMwoqPgdEatwc51HQCMqvjf2z7CmoHAqgtbWMD/{}.png",
                     token_id
                 ),
-                external_url: format!("https://terracon.quest/{}", name),
+                external_url: url,
             };
 
             self.token_metadata.write(token_id, metadata);
@@ -656,7 +666,13 @@ mod NFTMint {
             };
             self.whitelisted_address_len.write(whitelist_len);
         }
+
+
+
     }
+
+
+    
 
     /// @dev Internal Functions implementation for the NFT Mint contract
     #[generate_trait]

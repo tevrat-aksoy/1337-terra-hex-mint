@@ -1,5 +1,6 @@
 mod errors;
 mod types;
+mod utils;
 
 mod nft_mint {
     mod NFTMint;

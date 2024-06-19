@@ -414,6 +414,13 @@ fn test_sale() {
         metadata1.external_url == format!("https://terracon.quest/Pythagorasus"),
         'Error:: external_url'
     );
+
+    assert(NFTMint.get_token_attribute_len(token_id444)==4, 'Error:: attribute_len');
+    assert(NFTMint.get_token_attribute(token_id444,0)==Attribute { trait_type: 'birthplace', value: 'Peloponnese' }, 'Error:: attribute0');
+    assert(NFTMint.get_token_attribute(token_id444,1)==Attribute { trait_type: 'ethnicity', value: 'Spartans' }, 'Error:: attribute1');
+    assert(NFTMint.get_token_attribute(token_id444,2)==Attribute { trait_type: 'occupation', value: 'General' }, 'Error:: attribute2');
+    assert(NFTMint.get_token_attribute(token_id444,3)==Attribute { trait_type: 'special_trait', value: 'None' }, 'Error:: attribute3');
+
 }
 
 
@@ -485,6 +492,15 @@ fn test_reveal() {
         metadata1.external_url == format!("https://terracon.quest/Theseusides"),
         'Error:: external_url'
     );
+
+    assert(NFTMint.get_token_attribute_len(token_id1)==4, 'Error:: is revealed');
+    assert(NFTMint.get_token_attribute(token_id1,0)==Attribute { trait_type: 'birthplace', value: 'West Macedonia' }, 'Error:: attribute0');
+    assert(NFTMint.get_token_attribute(token_id1,1)==Attribute { trait_type: 'ethnicity', value: 'Macedonians' }, 'Error:: attribute1');
+    assert(NFTMint.get_token_attribute(token_id1,2)==Attribute { trait_type: 'occupation', value: 'General' }, 'Error:: attribute2');
+    assert(NFTMint.get_token_attribute(token_id1,3)==Attribute { trait_type: 'special_trait', value: 'None' }, 'Error:: attribute3');
+
+
+
 }
 
 
@@ -598,7 +614,7 @@ fn test_sale_not_started_then_panics() {
 fn test_invalid_sale_token_then_panics() {
     let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
 
-    let (ETHContract, STRKContract, LORDSContract) = deploy_tokens(
+    let (ETHContract, STRKContract, _LORDSContract) = deploy_tokens(
         _OWNER, ETH_ADDRESS.try_into().unwrap()
     );
 
@@ -624,6 +640,141 @@ fn test_invalid_sale_token_then_panics() {
     cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
     NFTMint.mint(_ACCOUNT1, 2, STRKContract.contract_address);
 }
+
+#[test]
+#[should_panic(expected: ('Invalid proof',))]
+fn test_invalid_proof_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_merkle_root(MERKLE_ROOT);
+
+    assert(NFTMint.get_merkle_root() == MERKLE_ROOT, 'Error:: saved root');
+
+    let token_id1: u256 = 1;
+    let name1 = 'Theseusides';
+    let mut attributes1 = ArrayTrait::<Attribute>::new();
+    attributes1.append(Attribute { trait_type: 'birthplace', value: 'West Macedonia' });
+    attributes1.append(Attribute { trait_type: 'ethnicity', value: 'Macedonians' });
+    attributes1.append(Attribute { trait_type: 'occupation', value: 'General' });
+    attributes1.append(Attribute { trait_type: 'special_trait', value: 'None' });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+        0x8c716ef984c8f0d28eaeb3953cbe744fd801666fc72b6ba76ab73783ffe7e7,
+        0x1ea5f6c1e9b55ab8c90c0ec054bd26e73cd2315c321cf8ebc6dcfe6825996a3,
+        0x3269866fed3f1037dd0842c0377789813059a5f161408cf69540a545b5b98f7,
+        0x670931d08fd6143ff56c710e7133b3772beac178ce5e94f4c2fc46752212690,
+        0x418ef66924acf7ee380515d2d9403cc6305eb8591b2f13eb089b78535e86719,
+        0x7e006e3e813a9c414b5319e8000bb9ff236cc0f3d9df5bf93e3bd3bcf5590c8,
+        0x56cfa47a8c941147f8d668abc703883d9bce3d629b5a25641578f06ba633945
+    ];
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.reveal_token(token_id1, name1, attributes1.span(), proof1.span());
+}
+
+#[test]
+#[should_panic(expected: ('Token already revealed',))]
+fn test_already_reveal_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_merkle_root(MERKLE_ROOT);
+
+    assert(NFTMint.get_merkle_root() == MERKLE_ROOT, 'Error:: saved root');
+
+    let token_id1: u256 = 1;
+    let name1 = 'Theseusides';
+    let mut attributes1 = ArrayTrait::<Attribute>::new();
+    attributes1.append(Attribute { trait_type: 'birthplace', value: 'West Macedonia' });
+    attributes1.append(Attribute { trait_type: 'ethnicity', value: 'Macedonians' });
+    attributes1.append(Attribute { trait_type: 'occupation', value: 'General' });
+    attributes1.append(Attribute { trait_type: 'special_trait', value: 'None' });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+        0x8c716ef984c8f0d28eaeb3953cbe744fd801666fc72b6ba76ab73783ffe7e7,
+        0x1ea5f6c1e9b55ab8c90c0ec054bd26e73cd2315c321cf8ebc6dcfe6825996a3,
+        0x3269866fed3f1037dd0842c0377789813059a5f161408cf69540a545b5b98f7,
+        0x670931d08fd6143ff56c710e7133b3772beac178ce5e94f4c2fc46752212690,
+        0x418ef66924acf7ee380515d2d9403cc6305eb8591b2f13eb089b78535e86719,
+        0x7e006e3e813a9c414b5319e8000bb9ff236cc0f3d9df5bf93e3bd3bcf5590c8,
+        0x56cfa47a8c941147f8d668abc703883d9bce3d629b5a25641578f06ba633948
+    ];
+    assert(
+        NFTMint
+            .get_root_for(name1, token_id1.low, attributes1.span(), proof1.span()) == MERKLE_ROOT,
+        'Error:: token1 data'
+    );
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.reveal_token(token_id1, name1, attributes1.span(), proof1.span());
+    NFTMint.reveal_token(token_id1, name1, attributes1.span(), proof1.span());
+}
+
+
+
+
+#[test]
+#[should_panic(expected: ('ERC721: unauthorized caller',))]
+fn test_not_owner_reveal_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_merkle_root(MERKLE_ROOT);
+
+    assert(NFTMint.get_merkle_root() == MERKLE_ROOT, 'Error:: saved root');
+
+    let token_id1: u256 = 1;
+    let name1 = 'Theseusides';
+    let mut attributes1 = ArrayTrait::<Attribute>::new();
+    attributes1.append(Attribute { trait_type: 'birthplace', value: 'West Macedonia' });
+    attributes1.append(Attribute { trait_type: 'ethnicity', value: 'Macedonians' });
+    attributes1.append(Attribute { trait_type: 'occupation', value: 'General' });
+    attributes1.append(Attribute { trait_type: 'special_trait', value: 'None' });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+        0x8c716ef984c8f0d28eaeb3953cbe744fd801666fc72b6ba76ab73783ffe7e7,
+        0x1ea5f6c1e9b55ab8c90c0ec054bd26e73cd2315c321cf8ebc6dcfe6825996a3,
+        0x3269866fed3f1037dd0842c0377789813059a5f161408cf69540a545b5b98f7,
+        0x670931d08fd6143ff56c710e7133b3772beac178ce5e94f4c2fc46752212690,
+        0x418ef66924acf7ee380515d2d9403cc6305eb8591b2f13eb089b78535e86719,
+        0x7e006e3e813a9c414b5319e8000bb9ff236cc0f3d9df5bf93e3bd3bcf5590c8,
+        0x56cfa47a8c941147f8d668abc703883d9bce3d629b5a25641578f06ba633948
+    ];
+    assert(
+        NFTMint
+            .get_root_for(name1, token_id1.low, attributes1.span(), proof1.span()) == MERKLE_ROOT,
+        'Error:: token1 data'
+    );
+
+    cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
+    NFTMint.reveal_token(token_id1, name1, attributes1.span(), proof1.span());
+}
+
 
 //
 

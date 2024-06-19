@@ -1,4 +1,4 @@
-#[derive(Drop, Serde, starknet::Store, Copy)]
+#[derive(Drop, Serde, starknet::Store, Copy,PartialEq)]
 struct Attribute {
     trait_type: felt252,
     value: felt252,

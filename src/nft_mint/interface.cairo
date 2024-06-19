@@ -16,6 +16,11 @@ pub trait INFTMint<TContractState> {
     fn get_token_attribute(self: @TContractState, token_id: u256, index: u32) -> Attribute;
     fn get_token_attribute_len(self: @TContractState, token_id: u256) -> u32;
     fn get_token_attributes(self: @TContractState, token_id: u256) -> Array<Attribute>;
+
+    fn get_token_stat(self: @TContractState, token_id: u256, index: u32) -> Stat;
+    fn get_token_stat_len(self: @TContractState, token_id: u256) -> u32 ;
+    fn get_token_stats(self: @TContractState, token_id: u256) -> Array<Stat>;
+
     fn is_revealed(self: @TContractState, token_id: u256,) -> bool;
     fn is_stats_revealed(self: @TContractState, token_id: u256,) -> bool;
 

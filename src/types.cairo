@@ -12,7 +12,7 @@ struct TokenMetadata {
     external_url: ByteArray,
 }
 
-#[derive(Drop, Serde, starknet::Store, Copy)]
+#[derive(Drop, Serde, starknet::Store, Copy,PartialEq)]
 struct Stat {
     stat_type: felt252,
     value: u256,

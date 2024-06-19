@@ -321,6 +321,27 @@ mod NFTMint {
             attributes
         }
 
+        fn get_token_stat(self: @ContractState, token_id: u256, index: u32) -> Stat {
+            self.token_stats.read((token_id, index))
+        }
+
+        fn get_token_stat_len(self: @ContractState, token_id: u256) -> u32 {
+            self.token_stats_len.read(token_id,)
+        }
+
+        fn get_token_stats(self: @ContractState, token_id: u256) -> Array<Stat> {
+            let len = self.token_stats_len.read(token_id,);
+            let mut stats: Array<Stat> = ArrayTrait::new();
+            let mut i = 0;
+            while i < len {
+                stats.append(self.token_stats.read((token_id, i)));
+                i = i + 1;
+            };
+            stats
+        }
+
+
+
         fn is_revealed(self: @ContractState, token_id: u256,) -> bool {
             self.is_revealed.read(token_id,)
         }
@@ -614,7 +635,7 @@ mod NFTMint {
                 };
             };
             self.token_stats_len.write(token_id, stats_len);
-            self.is_revealed.write(token_id, true);
+            self.is_stat_revealed.write(token_id, true);
         }
 
 

@@ -15,7 +15,7 @@ use openzeppelin::token::erc721::interface::{
     ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait
 };
 use snforge_std::{ContractClassTrait, declare, cheat_caller_address, CheatSpan};
-use terracon_prestige_card::types::{TokenMetadata, Attribute,Stat};
+use terracon_prestige_card::types::{TokenMetadata, Attribute, Stat};
 
 const MAX_TOKENS_PER_ADDRESS: u256 = 2;
 const MINTING_FEE: u256 = 33000000000000000; // 0.033 ether
@@ -415,12 +415,35 @@ fn test_sale() {
         'Error:: external_url'
     );
 
-    assert(NFTMint.get_token_attribute_len(token_id444)==4, 'Error:: attribute_len');
-    assert(NFTMint.get_token_attribute(token_id444,0)==Attribute { trait_type: 'birthplace', value: 'Peloponnese' }, 'Error:: attribute0');
-    assert(NFTMint.get_token_attribute(token_id444,1)==Attribute { trait_type: 'ethnicity', value: 'Spartans' }, 'Error:: attribute1');
-    assert(NFTMint.get_token_attribute(token_id444,2)==Attribute { trait_type: 'occupation', value: 'General' }, 'Error:: attribute2');
-    assert(NFTMint.get_token_attribute(token_id444,3)==Attribute { trait_type: 'special_trait', value: 'None' }, 'Error:: attribute3');
-
+    assert(NFTMint.get_token_attribute_len(token_id444) == 4, 'Error:: attribute_len');
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id444, 0
+            ) == Attribute { trait_type: 'birthplace', value: 'Peloponnese' },
+        'Error:: attribute0'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id444, 1
+            ) == Attribute { trait_type: 'ethnicity', value: 'Spartans' },
+        'Error:: attribute1'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id444, 2
+            ) == Attribute { trait_type: 'occupation', value: 'General' },
+        'Error:: attribute2'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id444, 3
+            ) == Attribute { trait_type: 'special_trait', value: 'None' },
+        'Error:: attribute3'
+    );
 }
 
 
@@ -493,13 +516,35 @@ fn test_reveal() {
         'Error:: external_url'
     );
 
-    assert(NFTMint.get_token_attribute_len(token_id1)==4, 'Error:: attribute_len');
-    assert(NFTMint.get_token_attribute(token_id1,0)==Attribute { trait_type: 'birthplace', value: 'West Macedonia' }, 'Error:: attribute0');
-    assert(NFTMint.get_token_attribute(token_id1,1)==Attribute { trait_type: 'ethnicity', value: 'Macedonians' }, 'Error:: attribute1');
-    assert(NFTMint.get_token_attribute(token_id1,2)==Attribute { trait_type: 'occupation', value: 'General' }, 'Error:: attribute2');
-    assert(NFTMint.get_token_attribute(token_id1,3)==Attribute { trait_type: 'special_trait', value: 'None' }, 'Error:: attribute3');
-
-
+    assert(NFTMint.get_token_attribute_len(token_id1) == 4, 'Error:: attribute_len');
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 0
+            ) == Attribute { trait_type: 'birthplace', value: 'West Macedonia' },
+        'Error:: attribute0'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 1
+            ) == Attribute { trait_type: 'ethnicity', value: 'Macedonians' },
+        'Error:: attribute1'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 2
+            ) == Attribute { trait_type: 'occupation', value: 'General' },
+        'Error:: attribute2'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 3
+            ) == Attribute { trait_type: 'special_trait', value: 'None' },
+        'Error:: attribute3'
+    );
 
     let mut attributes2 = ArrayTrait::<Attribute>::new();
     attributes2.append(Attribute { trait_type: 'birthplace1', value: 'Peloponnese1' });
@@ -508,20 +553,46 @@ fn test_reveal() {
     attributes2.append(Attribute { trait_type: 'special_trait4', value: 'Courage' });
     attributes2.append(Attribute { trait_type: 'test', value: 'test' });
 
-
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
     NFTMint.add_authorized_address(_OWNER);
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
     NFTMint.update_token_attributes(token_id1, attributes2.span());
 
-    assert(NFTMint.get_token_attribute_len(token_id1)==5, 'Error:: attribute_len2');
-    assert(NFTMint.get_token_attribute(token_id1,0)==Attribute { trait_type: 'birthplace1', value: 'Peloponnese1' }, 'Error:: attribute4');
-    assert(NFTMint.get_token_attribute(token_id1,1)==Attribute { trait_type: 'ethnicity2', value: 'Spartans2' }, 'Error:: attribute5');
-    assert(NFTMint.get_token_attribute(token_id1,2)==Attribute { trait_type: 'occupation3', value: 'General3' }, 'Error:: attribute6');
-    assert(NFTMint.get_token_attribute(token_id1,3)==Attribute { trait_type: 'special_trait4', value: 'Courage' }, 'Error:: attribute7');
-    assert(NFTMint.get_token_attribute(token_id1,4)==Attribute { trait_type: 'test', value: 'test' }, 'Error:: attribute8');
-
+    assert(NFTMint.get_token_attribute_len(token_id1) == 5, 'Error:: attribute_len2');
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 0
+            ) == Attribute { trait_type: 'birthplace1', value: 'Peloponnese1' },
+        'Error:: attribute4'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 1
+            ) == Attribute { trait_type: 'ethnicity2', value: 'Spartans2' },
+        'Error:: attribute5'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 2
+            ) == Attribute { trait_type: 'occupation3', value: 'General3' },
+        'Error:: attribute6'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(
+                token_id1, 3
+            ) == Attribute { trait_type: 'special_trait4', value: 'Courage' },
+        'Error:: attribute7'
+    );
+    assert(
+        NFTMint
+            .get_token_attribute(token_id1, 4) == Attribute { trait_type: 'test', value: 'test' },
+        'Error:: attribute8'
+    );
 
     let mut stats = ArrayTrait::<Stat>::new();
     stats.append(Stat { stat_type: 'birthplace1', value: 111 });
@@ -531,24 +602,108 @@ fn test_reveal() {
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
     NFTMint.update_token_stats(token_id1, stats.span());
 
-    assert(NFTMint.get_token_stat_len(token_id1)==3, 'Error:: attribute_len2');
-    assert(NFTMint.get_token_stat(token_id1,0)==Stat { stat_type: 'birthplace1', value: 111 }, 'Error:: stat');
-    assert(NFTMint.get_token_stat(token_id1,1)==Stat { stat_type: 'ethnicity2', value: 222 }, 'Error:: stat');
-    assert(NFTMint.get_token_stat(token_id1,2)==Stat { stat_type: 'occupation3', value: 333 }, 'Error:: stat');
+    assert(NFTMint.get_token_stat_len(token_id1) == 3, 'Error:: attribute_len2');
+    assert(
+        NFTMint.get_token_stat(token_id1, 0) == Stat { stat_type: 'birthplace1', value: 111 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 1) == Stat { stat_type: 'ethnicity2', value: 222 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 2) == Stat { stat_type: 'occupation3', value: 333 },
+        'Error:: stat'
+    );
 
     stats.append(Stat { stat_type: 'str', value: 4444 });
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
     NFTMint.update_token_stats(token_id1, stats.span());
 
-    assert(NFTMint.get_token_stat_len(token_id1)==4, 'Error:: attribute_len2');
-    assert(NFTMint.get_token_stat(token_id1,0)==Stat { stat_type: 'birthplace1', value: 111 }, 'Error:: stat');
-    assert(NFTMint.get_token_stat(token_id1,1)==Stat { stat_type: 'ethnicity2', value: 222 }, 'Error:: stat');
-    assert(NFTMint.get_token_stat(token_id1,2)==Stat { stat_type: 'occupation3', value: 333 }, 'Error:: stat');
-    assert(NFTMint.get_token_stat(token_id1,3)==Stat { stat_type: 'str', value: 4444 }, 'Error:: stat');
-
+    assert(NFTMint.get_token_stat_len(token_id1) == 4, 'Error:: attribute_len2');
+    assert(
+        NFTMint.get_token_stat(token_id1, 0) == Stat { stat_type: 'birthplace1', value: 111 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 1) == Stat { stat_type: 'ethnicity2', value: 222 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 2) == Stat { stat_type: 'occupation3', value: 333 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 3) == Stat { stat_type: 'str', value: 4444 },
+        'Error:: stat'
+    );
 }
 
+#[test]
+fn test_stat_reveal() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_authorized_address(_OWNER);
+
+    let token_id1: u256 = 1;
+    let mut stats = ArrayTrait::<Stat>::new();
+    stats.append(Stat { stat_type: 'birthplace1', value: 111 });
+    stats.append(Stat { stat_type: 'ethnicity2', value: 222 });
+    stats.append(Stat { stat_type: 'occupation3', value: 333 });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+    ];
+
+    let root = NFTMint.get_stat_root_for(token_id1.low, stats.span(), proof1.span());
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_stat_merkle_root(root);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
+
+    assert(NFTMint.is_stats_revealed(token_id1), 'Error:: is revealed');
+
+    assert(NFTMint.get_token_stat_len(token_id1) == 3, 'Error:: stat len');
+    assert(
+        NFTMint.get_token_stat(token_id1, 0) == Stat { stat_type: 'birthplace1', value: 111 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 1) == Stat { stat_type: 'ethnicity2', value: 222 },
+        'Error:: stat'
+    );
+    assert(
+        NFTMint.get_token_stat(token_id1, 2) == Stat { stat_type: 'occupation3', value: 333 },
+        'Error:: stat'
+    );
+
+    let mut stats2 = ArrayTrait::<Stat>::new();
+    stats2.append(Stat { stat_type: 'str', value: 1 });
+    stats2.append(Stat { stat_type: 'damage', value: 2 });
+    stats2.append(Stat { stat_type: 'age', value: 3 });
+    stats2.append(Stat { stat_type: 'int', value: 4 });
+    stats2.append(Stat { stat_type: 'ability', value: 5 });
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.update_token_stats(token_id1, stats2.span());
+
+    assert(NFTMint.get_token_stat_len(token_id1) == 5, 'Error:: stat len');
+    assert(NFTMint.get_token_stat(token_id1, 0) == *stats2.at(0), 'Error:: stat');
+    assert(NFTMint.get_token_stat(token_id1, 1) == *stats2.at(1), 'Error:: stat');
+    assert(NFTMint.get_token_stat(token_id1, 2) == *stats2.at(2), 'Error:: stat');
+    assert(NFTMint.get_token_stat(token_id1, 3) == *stats2.at(3), 'Error:: stat');
+    assert(NFTMint.get_token_stat(token_id1, 4) == *stats2.at(4), 'Error:: stat');
+}
 
 #[test]
 #[should_panic(expected: ('Free mint has not started',))]
@@ -774,8 +929,6 @@ fn test_already_reveal_then_panics() {
 }
 
 
-
-
 #[test]
 #[should_panic(expected: ('ERC721: unauthorized caller',))]
 fn test_not_owner_reveal_then_panics() {
@@ -819,6 +972,71 @@ fn test_not_owner_reveal_then_panics() {
 
     cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
     NFTMint.reveal_token(token_id1, name1, attributes1.span(), proof1.span());
+}
+
+#[test]
+#[should_panic(expected: ('Token already revealed',))]
+fn test_already_revealed_stat_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_authorized_address(_OWNER);
+
+    let token_id1: u256 = 1;
+    let mut stats = ArrayTrait::<Stat>::new();
+    stats.append(Stat { stat_type: 'birthplace1', value: 111 });
+    stats.append(Stat { stat_type: 'ethnicity2', value: 222 });
+    stats.append(Stat { stat_type: 'occupation3', value: 333 });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+    ];
+
+    let root = NFTMint.get_stat_root_for(token_id1.low, stats.span(), proof1.span());
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_stat_merkle_root(root);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
+    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
+}
+
+#[test]
+#[should_panic(expected: ('Invalid stat proof',))]
+fn test_invalid_proof_stat_then_panics() {
+    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
+
+    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
+    let NFTMint = deploy(_OWNER);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_authorized_address(_OWNER);
+
+    let token_id1: u256 = 1;
+    let mut stats = ArrayTrait::<Stat>::new();
+    stats.append(Stat { stat_type: 'birthplace1', value: 111 });
+    stats.append(Stat { stat_type: 'ethnicity2', value: 222 });
+    stats.append(Stat { stat_type: 'occupation3', value: 333 });
+
+    let proof1 = array![
+        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
+        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
+        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
+        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
+    ];
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.set_stat_merkle_root(0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898);
+
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
 }
 
 

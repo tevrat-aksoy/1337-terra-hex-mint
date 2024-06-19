@@ -341,7 +341,6 @@ mod NFTMint {
         }
 
 
-
         fn is_revealed(self: @ContractState, token_id: u256,) -> bool {
             self.is_revealed.read(token_id,)
         }
@@ -659,6 +658,7 @@ mod NFTMint {
                 self.emit(Event::FreeMintOpen(FreeMintOpen { time: current_time }));
             }
         }
+        
         fn set_merkle_root(ref self: ContractState, root: felt252) {
             self.ownable.assert_only_owner();
             self.merkle_root.write(root);

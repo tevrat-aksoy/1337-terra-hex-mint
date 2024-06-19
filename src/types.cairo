@@ -1,4 +1,4 @@
-#[derive(Drop, Serde, starknet::Store, Copy,PartialEq)]
+#[derive(Drop, Serde, starknet::Store, Copy, PartialEq)]
 struct Attribute {
     trait_type: felt252,
     value: felt252,
@@ -12,7 +12,7 @@ struct TokenMetadata {
     external_url: ByteArray,
 }
 
-#[derive(Drop, Serde, starknet::Store, Copy,PartialEq)]
+#[derive(Drop, Serde, starknet::Store, Copy, PartialEq)]
 struct Stat {
     stat_type: felt252,
     value: u256,

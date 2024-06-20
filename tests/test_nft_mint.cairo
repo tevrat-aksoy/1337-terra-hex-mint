@@ -975,40 +975,6 @@ fn test_not_owner_reveal_then_panics() {
 }
 
 #[test]
-#[should_panic(expected: ('Token already revealed',))]
-fn test_already_revealed_stat_then_panics() {
-    let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
-
-    let _ETHContract = deploy_token(_OWNER, ETH_ADDRESS.try_into().unwrap());
-    let NFTMint = deploy(_OWNER);
-
-    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-    NFTMint.add_authorized_address(_OWNER);
-
-    let token_id1: u256 = 1;
-    let mut stats = ArrayTrait::<Stat>::new();
-    stats.append(Stat { stat_type: 'birthplace1', value: 111 });
-    stats.append(Stat { stat_type: 'ethnicity2', value: 222 });
-    stats.append(Stat { stat_type: 'occupation3', value: 333 });
-
-    let proof1 = array![
-        0x4b3133c06a5497f1f54e77a87dec7c8e26720a15fd889d99f97f880898b8208,
-        0x7cb9f7e626f51df2323aa4f7b04fad91b148c0c79029faca0898edd9c449ef,
-        0x456ce991eab61b455527dc34cc71c39458b0000cf75065344e15747e4a147c8,
-        0x2b59f1b6509226b9d8ad9b694693948cddcc73741293d0a302738a707b5acd0,
-    ];
-
-    let root = NFTMint.get_stat_root_for(token_id1.low, stats.span(), proof1.span());
-
-    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-    NFTMint.set_stat_merkle_root(root);
-
-    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
-    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
-    NFTMint.reveal_stats(token_id1, stats.span(), proof1.span());
-}
-
-#[test]
 #[should_panic(expected: ('Invalid stat proof',))]
 fn test_invalid_proof_stat_then_panics() {
     let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();

@@ -617,8 +617,6 @@ mod NFTMint {
             mut stats: Span::<Stat>,
             proofs: Span::<felt252>
         ) {
-            assert(!self.is_stat_revealed.read(token_id), Errors::TOKEN_ALREADY_REVALED);
-
             let root = self.get_stat_root_for(token_id.low, stats, proofs);
             assert(root == self.stats_merkle_root.read(), Errors::INVALID_STAT_PROOF);
             let stats_len = stats.len();

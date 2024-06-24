@@ -1,0 +1,3 @@
+tests::test_nft_mint::test_multi_mint_then_panics
+tests::test_nft_mint::test_max_mint_then_panics
+tests::test_nft_mint::test_sale_not_started_then_panics

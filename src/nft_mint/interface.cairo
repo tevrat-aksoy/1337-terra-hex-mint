@@ -1,11 +1,11 @@
 use starknet::ContractAddress;
 use terracon_prestige_card::types::{TokenMetadata, Attribute, Stat};
 
-const MAX_TOKENS_PER_ADDRESS: u256 = 2;
+const MAX_MINT_LIMIT: u256 = 20;
+const MAX_WHITELIST_MINT: u256 = 1;
 const MINTING_FEE: u256 = 33000000000000000; // 0.033 ether
 const MAX_SUPPLY: u256 = 1337;
 const OWNER_FREE_MINT_AMOUNT: u256 = 337;
-const WHITELIST_FREE_MINT_END: u256 = 437; // 437
 
 #[starknet::interface]
 pub trait INFTMint<TContractState> {
@@ -47,14 +47,13 @@ pub trait INFTMint<TContractState> {
 
     fn get_merkle_root(ref self: TContractState,) -> felt252;
     fn get_stat_merke_root(ref self: TContractState,) -> felt252;
-
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
+    fn set_whitelist_limit(ref self: TContractState, amount: u256);
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
     );
-
     fn update_token_stats(ref self: TContractState, token_id: u256, new_stats: Span::<Stat>,);
-
+    
     fn reveal_token(
         ref self: TContractState,
         token_id: u256,
@@ -62,7 +61,6 @@ pub trait INFTMint<TContractState> {
         attributes: Span::<Attribute>,
         proofs: Span::<felt252>
     );
-
     fn reveal_stats(
         ref self: TContractState, token_id: u256, stats: Span::<Stat>, proofs: Span::<felt252>
     );

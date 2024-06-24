@@ -12,8 +12,8 @@ mod NFTMint {
     use openzeppelin::token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use terracon_prestige_card::errors::Errors;
     use terracon_prestige_card::nft_mint::interface::{
-        INFTMint, MAX_TOKENS_PER_ADDRESS, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
-        WHITELIST_FREE_MINT_END
+        INFTMint, MAX_MINT_LIMIT, MINTING_FEE, MAX_SUPPLY, OWNER_FREE_MINT_AMOUNT,
+        MAX_WHITELIST_MINT
     };
     use core::integer::u128_to_felt252;
 
@@ -60,6 +60,10 @@ mod NFTMint {
         is_stat_revealed: LegacyMap<u256, bool>,
         authorized_addresses: LegacyMap<ContractAddress, bool>,
         payment_tokens: LegacyMap<ContractAddress, u256>,
+        whitelist_mint:LegacyMap<ContractAddress, u256>,
+        public_mint:LegacyMap<ContractAddress, u256>,
+        whitelisted_max_amount:u256,
+        whitelisted_token_minted:u256,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -147,6 +151,7 @@ mod NFTMint {
             token_id += 1;
         };
         self.next_token_id.write(token_id);
+        self.whitelisted_max_amount.write(200);
         self
             .payment_tokens
             .write(
@@ -457,6 +462,13 @@ mod NFTMint {
             self.payment_tokens.write(token, amount);
         }
 
+
+        fn set_whitelist_limit(ref self: ContractState, amount: u256) {
+            self.ownable.assert_only_owner();
+            assert(amount >= self.whitelisted_token_minted.read(), Errors::INVALID_MINT_LIMIT);
+            self.whitelisted_max_amount.write( amount);
+        }
+
         fn update_token_attributes(
             ref self: ContractState, token_id: u256, mut new_attributes: Span::<Attribute>,
         ) {
@@ -514,28 +526,32 @@ mod NFTMint {
             assert(!recipient.is_zero(), Errors::INVALID_RECIPIENT);
             let next_token_id = self.next_token_id.read();
             assert(next_token_id + quantity <= MAX_SUPPLY, Errors::MAX_SUPPLY_REACHED);
-            assert(
-                self.erc721.balance_of(recipient) + quantity <= MAX_TOKENS_PER_ADDRESS,
-                Errors::MAX_NFT_PER_ADDRESS
-            );
+
+            let whitelisted_max=self.whitelisted_max_amount.read();
+            let whitelist_minted=self.whitelisted_token_minted.read();
 
             let mut token_id = next_token_id;
             let mut minted_quantity = 0;
 
+            let whitelisted = self.is_whitelisted.read(recipient);
+
+            let public_mint_amount=self.public_mint.read(recipient);
+            assert(public_mint_amount+quantity<=MAX_MINT_LIMIT,Errors::MINT_REACHED);
+
             while minted_quantity < quantity {
-                if token_id <= WHITELIST_FREE_MINT_END {
+                if whitelisted &&whitelist_minted<whitelisted_max  {
                     assert(self.free_mint_open.read(), Errors::FREE_MINT_NOT_STARTED);
                     /// @dev Check if the recipient is whitelisted
-                    let whitelisted = self.is_whitelisted.read(recipient);
-
-                    assert(quantity == 1, Errors::WHITELIST_LIMIT);
-                    assert(whitelisted, Errors::WHITELIST_MINT);
+                    assert(quantity == MAX_WHITELIST_MINT, Errors::WHITELIST_LIMIT);
+                    assert(self.whitelist_mint.read(recipient)==0,Errors::WHITELISTED_MINT_REACHED);
 
                     let mut whitelist_len = self.whitelisted_address_len.read();
                     whitelist_len = self._remove_whitelist(recipient, whitelist_len);
                     self.whitelisted_address_len.write(whitelist_len);
                     self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
+                    self.whitelist_mint.write(recipient,1);
+                    self.whitelisted_token_minted.write(whitelist_minted+1);
                 } else {
                     /// @dev Check if the public sale is open
                     assert(self.public_sale_open.read(), Errors::PUBLIC_SALE_NOT_STARTED);
@@ -549,11 +565,18 @@ mod NFTMint {
 
                     self._add_token_to(recipient, token_id);
                     self.erc721._mint(recipient, token_id);
+
                 }
                 token_id += 1;
                 minted_quantity += 1;
             };
+            let whitelist_minted_=self.whitelisted_token_minted.read();
+            let whitelist_left= whitelisted_max-whitelist_minted_;
+            
+            assert(next_token_id + whitelist_left <= MAX_SUPPLY, Errors::MAX_PUBLIC_MINT_REACHED);
 
+
+            self.public_mint.write(recipient,minted_quantity);
             self.next_token_id.write(token_id);
         }
 

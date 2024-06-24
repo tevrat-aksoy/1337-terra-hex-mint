@@ -16,5 +16,10 @@ pub mod Errors {
     const TRANSFER_FAILED: felt252 = 'Transfer failed';
     const INVALID_PROOF: felt252 = 'Invalid proof';
     const INVALID_STAT_PROOF: felt252 = 'Invalid stat proof';
+    const WHITELISTED_MINT_REACHED: felt252 = 'User whitelist limit reached';
+    const MINT_REACHED: felt252 = 'User mint limit reached';
+    const MAX_PUBLIC_MINT_REACHED: felt252 = 'Max public mint reached';
+    const INVALID_MINT_LIMIT: felt252 = 'Invalid mint limit';
+
 }
 

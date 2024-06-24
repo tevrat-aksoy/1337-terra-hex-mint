@@ -61,7 +61,6 @@ fn test_init() {
     );
 
     assert(NFTMint.get_whitelisted_max_amount() == 200, 'Error:: max index');
- 
 }
 
 #[test]
@@ -233,7 +232,6 @@ fn test_whitelist_mint() {
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
     NFTMint.set_whitelist_limit(100);
     assert(NFTMint.get_whitelisted_max_amount() == 100, 'Error:: max index');
-
 }
 
 #[test]
@@ -256,12 +254,7 @@ fn test_wl_limit() {
     ETHContract.approve(NFTMint.contract_address, 10000 * MINTING_FEE);
 
     cheat_caller_address(NFTMint.contract_address, _ACCOUNT1, CheatSpan::TargetCalls(1));
-    NFTMint
-        .mint(
-            _ACCOUNT1,
-            10,
-            ETHContract.contract_address
-        );
+    NFTMint.mint(_ACCOUNT1, 10, ETHContract.contract_address);
 
     assert(ETHContract.balance_of(_ACCOUNT1) == 990 * MINTING_FEE, 'Error:: balanceOf ac1');
 
@@ -292,17 +285,12 @@ fn test_wl_limit() {
     ETHContract.approve(NFTMint.contract_address, 10000 * MINTING_FEE);
 
     cheat_caller_address(NFTMint.contract_address, _ACCOUNT2, CheatSpan::TargetCalls(2));
-    NFTMint.mint(
-        _ACCOUNT2,
-            1,
-            ETHContract.contract_address
-        );
+    NFTMint.mint(_ACCOUNT2, 1, ETHContract.contract_address);
 
     assert(NFTMint.get_whitelisted_token_minted() == 200, 'Error:: wl minted');
     assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 212, 'Error:: total sup2');
     assert(ETHContract.balance_of(_ACCOUNT2) == 999 * MINTING_FEE, 'Error:: balanceOf ac2');
 }
-
 
 
 #[test]
@@ -526,7 +514,6 @@ fn test_sale() {
     );
 }
 
-
 #[test]
 fn test_wl_mint_when_public_finished() {
     let (_OWNER, _ACCOUNT1, _ACCOUNT2, _ACCOUNT3) = deploy_accounts();
@@ -563,39 +550,38 @@ fn test_wl_mint_when_public_finished() {
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
     NFTMint.set_whitelist_limit(900);
-    
+
     let mut j = 1_u32;
     while j < 6 {
-     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
         NFTMint
             .mint(
-                contract_address_try_from_felt252((j*222).into()).unwrap(),
+                contract_address_try_from_felt252((j * 222).into()).unwrap(),
                 20,
                 ETHContract.contract_address
             );
-            j += 1;
+        j += 1;
     };
 
     assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 121, 'Error:: total sup2');
     assert(NFTMint.get_whitelisted_token_minted() == 20, 'Error:: wl minted');
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-    NFTMint
-        .add_whitelist_addresses(array![_ACCOUNT2]);
+    NFTMint.add_whitelist_addresses(array![_ACCOUNT2,_ACCOUNT3]);
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-    NFTMint
-        .mint(
-            _ACCOUNT2,
-            1,
-            ETHContract.contract_address
-        );
+    NFTMint.mint(_ACCOUNT2, 1, ETHContract.contract_address);
 
-        assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 122, 'Error:: total sup3');
-        assert(NFTMint.get_whitelisted_token_minted() == 21, 'Error:: wl minted3');
+    assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 122, 'Error:: total sup3');
+    assert(NFTMint.get_whitelisted_token_minted() == 21, 'Error:: wl minted3');
     
-}
 
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.mint(_ACCOUNT3, 1, ETHContract.contract_address);
+
+    assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 123, 'Error:: total sup3');
+    assert(NFTMint.get_whitelisted_token_minted() == 22, 'Error:: wl minted3');
+}
 
 
 #[test]
@@ -946,9 +932,7 @@ fn test_sale_not_started_then_panics() {
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
     NFTMint
         .mint(
-            contract_address_try_from_felt252(1.into()).unwrap(),
-            1,
-            ETHContract.contract_address
+            contract_address_try_from_felt252(1.into()).unwrap(), 1, ETHContract.contract_address
         );
 }
 
@@ -967,24 +951,13 @@ fn test_wl_mint_limit_then_panics() {
     NFTMint.set_free_mint(true);
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
-    NFTMint
-        .mint(
-            _ACCOUNT1,
-            1,
-            ETHContract.contract_address
-        );
+    NFTMint.mint(_ACCOUNT1, 1, ETHContract.contract_address);
 
-        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-        NFTMint.add_whitelist_addresses(array![_ACCOUNT1, ]);
-        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
-        NFTMint
-            .mint(
-                _ACCOUNT1,
-                1,
-                ETHContract.contract_address
-            );
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+    NFTMint.add_whitelist_addresses(array![_ACCOUNT1,]);
+    cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
+    NFTMint.mint(_ACCOUNT1, 1, ETHContract.contract_address);
 }
-
 
 
 #[test]
@@ -1044,12 +1017,11 @@ fn test_sale_limit2_then_panics() {
 
     assert(ETHContract.balance_of(_ACCOUNT1) == 990 * MINTING_FEE, 'Error:: balanceOf ac1');
     assert(
-        ETHContract.balance_of(_OWNER) == owner_balance + 10 * MINTING_FEE, 'Error:: balanceOf owner'
+        ETHContract.balance_of(_OWNER) == owner_balance + 10 * MINTING_FEE,
+        'Error:: balanceOf owner'
     );
     NFTMint.mint(_ACCOUNT1, 11, ETHContract.contract_address);
 }
-
-
 
 
 #[test]
@@ -1260,7 +1232,6 @@ fn test_mint_limit_when_wl_not_finished_then_panics() {
     NFTMint.set_free_mint(true);
     NFTMint.set_public_sale_open(true);
 
-
     cheat_caller_address(ETHContract.contract_address, _OWNER, CheatSpan::TargetCalls(1));
     ETHContract.approve(NFTMint.contract_address, 10000 * MINTING_FEE);
 
@@ -1285,35 +1256,25 @@ fn test_mint_limit_when_wl_not_finished_then_panics() {
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(2));
     NFTMint.set_whitelist_limit(900);
-    
+
     let mut j = 1_u32;
     while j < 6 {
-     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
+        cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
         NFTMint
             .mint(
-                contract_address_try_from_felt252((j*222).into()).unwrap(),
+                contract_address_try_from_felt252((j * 222).into()).unwrap(),
                 20,
                 ETHContract.contract_address
             );
-            j += 1;
+        j += 1;
     };
 
     assert(NFTMint.total_supply() == OWNER_FREE_MINT_AMOUNT + 121, 'Error:: total sup2');
     assert(NFTMint.get_whitelisted_token_minted() == 20, 'Error:: wl minted');
 
     cheat_caller_address(NFTMint.contract_address, _OWNER, CheatSpan::TargetCalls(1));
-    NFTMint
-        .mint(
-            _ACCOUNT2,
-            1,
-            ETHContract.contract_address
-        );
-        'last.'.print();
-
-
+    NFTMint.mint(_ACCOUNT2, 1, ETHContract.contract_address);
 }
-
-
 
 
 //

@@ -20,6 +20,5 @@ pub mod Errors {
     const MINT_REACHED: felt252 = 'User mint limit reached';
     const MAX_PUBLIC_MINT_REACHED: felt252 = 'Max public mint reached';
     const INVALID_MINT_LIMIT: felt252 = 'Invalid mint limit';
-
 }
 

@@ -47,13 +47,16 @@ pub trait INFTMint<TContractState> {
 
     fn get_merkle_root(ref self: TContractState,) -> felt252;
     fn get_stat_merke_root(ref self: TContractState,) -> felt252;
+    fn get_whitelisted_token_minted(ref self: TContractState,) -> u256;
+    fn get_whitelisted_max_amount(ref self: TContractState,) -> u256;
+
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
     fn set_whitelist_limit(ref self: TContractState, amount: u256);
     fn update_token_attributes(
         ref self: TContractState, token_id: u256, new_attributes: Span::<Attribute>
     );
     fn update_token_stats(ref self: TContractState, token_id: u256, new_stats: Span::<Stat>,);
-    
+
     fn reveal_token(
         ref self: TContractState,
         token_id: u256,

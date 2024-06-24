@@ -443,6 +443,14 @@ mod NFTMint {
             self.stats_merkle_root.read()
         }
 
+        fn get_whitelisted_token_minted(ref self: ContractState,) -> u256 {
+            self.whitelisted_token_minted.read()
+        }
+
+        fn get_whitelisted_max_amount(ref self: ContractState,) -> u256 {
+            self.whitelisted_max_amount.read()
+        }
+
         fn add_authorized_address(ref self: ContractState, address: ContractAddress) {
             self.ownable.assert_only_owner();
             self.authorized_addresses.write(address, true);
@@ -536,6 +544,7 @@ mod NFTMint {
             let whitelisted = self.is_whitelisted.read(recipient);
 
             let public_mint_amount=self.public_mint.read(recipient);
+
             assert(public_mint_amount+quantity<=MAX_MINT_LIMIT,Errors::MINT_REACHED);
 
             while minted_quantity < quantity {
@@ -572,9 +581,8 @@ mod NFTMint {
             };
             let whitelist_minted_=self.whitelisted_token_minted.read();
             let whitelist_left= whitelisted_max-whitelist_minted_;
-            
-            assert(next_token_id + whitelist_left <= MAX_SUPPLY, Errors::MAX_PUBLIC_MINT_REACHED);
-
+    
+            assert(token_id -1 + whitelist_left <= MAX_SUPPLY, Errors::MAX_PUBLIC_MINT_REACHED);
 
             self.public_mint.write(recipient,minted_quantity);
             self.next_token_id.write(token_id);

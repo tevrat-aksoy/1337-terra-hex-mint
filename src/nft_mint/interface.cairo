@@ -45,10 +45,10 @@ pub trait INFTMint<TContractState> {
         self: @TContractState, tokenId: u128, stats: Span::<Stat>, proof: Span::<felt252>
     ) -> felt252;
 
-    fn get_merkle_root(ref self: TContractState,) -> felt252;
-    fn get_stat_merke_root(ref self: TContractState,) -> felt252;
-    fn get_whitelisted_token_minted(ref self: TContractState,) -> u256;
-    fn get_whitelisted_max_amount(ref self: TContractState,) -> u256;
+    fn get_merkle_root( self: @TContractState,) -> felt252;
+    fn get_stat_merke_root( self: @TContractState,) -> felt252;
+    fn get_whitelisted_token_minted( self: @TContractState,) -> u256;
+    fn get_whitelisted_max_amount( self: @TContractState,) -> u256;
 
     fn set_payment_tokens(ref self: TContractState, token: ContractAddress, amount: u256);
     fn set_whitelist_limit(ref self: TContractState, amount: u256);

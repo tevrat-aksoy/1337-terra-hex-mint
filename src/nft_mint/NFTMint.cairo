@@ -434,20 +434,20 @@ mod NFTMint {
         }
 
 
-        fn get_merkle_root(ref self: ContractState,) -> felt252 {
+        fn get_merkle_root(self: @ContractState,) -> felt252 {
             self.merkle_root.read()
         }
 
 
-        fn get_stat_merke_root(ref self: ContractState,) -> felt252 {
+        fn get_stat_merke_root(self: @ContractState,) -> felt252 {
             self.stats_merkle_root.read()
         }
 
-        fn get_whitelisted_token_minted(ref self: ContractState,) -> u256 {
+        fn get_whitelisted_token_minted(self: @ContractState,) -> u256 {
             self.whitelisted_token_minted.read()
         }
 
-        fn get_whitelisted_max_amount(ref self: ContractState,) -> u256 {
+        fn get_whitelisted_max_amount(self: @ContractState,) -> u256 {
             self.whitelisted_max_amount.read()
         }
 
